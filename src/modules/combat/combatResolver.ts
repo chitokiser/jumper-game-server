@@ -76,11 +76,6 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
   const monster = getMonstersByZone(player.zoneId).find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
 
-  // 거리 확인
-  const dist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
-  const maxRange = Math.max(60, monster.attackRangeM * 3);
-  if (dist > maxRange) return;
-
   const damage = player.level * 100;
   const { died } = applyDamageToMonster(monsterId, damage);
   recordPlayerAttack(userId);

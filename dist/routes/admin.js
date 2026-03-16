@@ -82,8 +82,8 @@ router.post('/admin/spawns', adminAuth, (req, res) => {
         respawnSeconds: Number(body.respawnSeconds) || 120,
         maxCount: Number(body.maxCount) || 1,
         active: body.active !== false,
-        aggroRangeM: Number(body.aggroRangeM) || 30,
-        attackRangeM: Number(body.attackRangeM) || 20,
+        aggroRangeM: Number(body.aggroRangeM) || 300,
+        attackRangeM: Number(body.attackRangeM) || 100,
         moveSpeed: Number(body.moveSpeed) || 1.0,
         attackPower: Number(body.attackPower) || 25,
         attackCooldownMs: Number(body.attackCooldownMs) || 2000,
@@ -91,6 +91,11 @@ router.post('/admin/spawns', adminAuth, (req, res) => {
     };
     (0, spawnConfigLoader_js_1.addSpawnConfig)(spawn);
     const created = (0, monsterSpawnService_js_1.fillSpawnPoint)(spawn);
+    // 신규 스폰 즉시 브로드캐스트 — 이미 접속한 플레이어가 바로 볼 수 있도록
+    const newInstances = (0, monsterInstanceStore_js_1.getMonstersBySpawn)(spawnId);
+    for (const m of newInstances) {
+        (0, clientSyncService_js_1.broadcastMonsterUpdate)(m.zoneId, m);
+    }
     logger_js_1.logger.info('adminRoute', `[admin] POST /admin/spawns → ${spawnId} (${spawn.monsterType} zone:${zoneId}) instances:${created}`);
     res.json({ spawnId, zoneId, instancesCreated: created, spawn });
 });

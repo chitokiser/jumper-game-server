@@ -15,8 +15,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ENV } from '../config/env.js';
 import { logger } from '../lib/logger.js';
-import { now } from '../lib/time.js';
-
 import {
   getAllSpawnConfigs,
   getSpawnConfig,
@@ -27,7 +25,6 @@ import {
 import {
   getAllMonsters,
   getMonster,
-  setMonster,
   getMonstersBySpawn,
   removeMonstersBySpawn,
 } from '../modules/monster/monsterInstanceStore.js';
@@ -114,8 +111,8 @@ router.post('/admin/spawns', adminAuth, (req: Request, res: Response) => {
     respawnSeconds:   Number(body.respawnSeconds)   || 120,
     maxCount:         Number(body.maxCount)          || 1,
     active:           body.active !== false,
-    aggroRangeM:      Number(body.aggroRangeM)       || 30,
-    attackRangeM:     Number(body.attackRangeM)      || 20,
+    aggroRangeM:      Number(body.aggroRangeM)       || 300,
+    attackRangeM:     Number(body.attackRangeM)      || 100,
     moveSpeed:        Number(body.moveSpeed)          || 1.0,
     attackPower:      Number(body.attackPower)        || 25,
     attackCooldownMs: Number(body.attackCooldownMs)  || 2000,
@@ -124,6 +121,12 @@ router.post('/admin/spawns', adminAuth, (req: Request, res: Response) => {
 
   addSpawnConfig(spawn);
   const created = fillSpawnPoint(spawn);
+
+  // 신규 스폰 즉시 브로드캐스트 — 이미 접속한 플레이어가 바로 볼 수 있도록
+  const newInstances = getMonstersBySpawn(spawnId);
+  for (const m of newInstances) {
+    broadcastMonsterUpdate(m.zoneId, m);
+  }
 
   logger.info('adminRoute', `[admin] POST /admin/spawns → ${spawnId} (${spawn.monsterType} zone:${zoneId}) instances:${created}`);
   res.json({ spawnId, zoneId, instancesCreated: created, spawn });

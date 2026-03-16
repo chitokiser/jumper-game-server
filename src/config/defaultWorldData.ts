@@ -111,8 +111,8 @@ export function getDefaultWorldData(): {
         respawnSeconds:   60,    // 테스트용 단축 — 운영 시 300 이상 권장
         maxCount:         1,
         active:           true,
-        aggroRangeM:      25,
-        attackRangeM:     20,   // GPS 정밀도 감안 (spec 4m → 실용값 20m)
+        aggroRangeM:      300,
+        attackRangeM:     100,
         moveSpeed:        0.8,
         attackPower:      25,
         attackCooldownMs: 1800,
@@ -163,8 +163,8 @@ export function getDefaultWorldData(): {
         respawnSeconds:   60,
         maxCount:         1,
         active:           true,
-        aggroRangeM:      25,
-        attackRangeM:     20,
+        aggroRangeM:      300,
+        attackRangeM:     100,
         moveSpeed:        0.8,
         attackPower:      25,
         attackCooldownMs: 1800,
