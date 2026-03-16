@@ -17,7 +17,6 @@ import { getPlayer } from '../player/playerStateStore.js';
 import { findNearestTarget, isTargetStillValid } from './monsterTargetService.js';
 import { setMonster } from './monsterInstanceStore.js';
 import { haversineM, moveToward } from '../../lib/geo.js';
-import { MONSTER_LEASH_M } from '../../config/constants.js';
 import { now } from '../../lib/time.js';
 
 const ARRIVE_THRESHOLD_M = 3; // 이 거리 이하면 도착으로 간주
@@ -56,7 +55,7 @@ function tickIdle(m: MonsterInstance, stepM: number): MonsterInstance {
 
 function tickChasing(m: MonsterInstance, stepM: number): MonsterInstance {
   // 타겟 유효성 재확인
-  if (!isTargetStillValid(m, MONSTER_LEASH_M)) {
+  if (!isTargetStillValid(m)) {
     m.targetUserId = null;
     m.state = 'return';
     return m;
@@ -83,7 +82,7 @@ function tickChasing(m: MonsterInstance, stepM: number): MonsterInstance {
 
 function tickAttacking(m: MonsterInstance): MonsterInstance {
   // 사거리 이탈 확인
-  if (!isTargetStillValid(m, MONSTER_LEASH_M)) {
+  if (!isTargetStillValid(m)) {
     m.targetUserId = null;
     m.state = 'return';
     return m;

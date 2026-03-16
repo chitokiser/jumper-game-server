@@ -10,10 +10,19 @@ import { emitToZone, emitToSocket } from './socketGateway.js';
 import { S2C } from './eventNames.js';
 import { MonsterInstance } from '../../types/monster.js';
 import { DropInstance } from '../../types/drop.js';
+import { getDropsByZone } from '../drop/dropStore.js';
 
-/** 존 전체 스냅샷 전송 (접속 직후 1회) */
+/** 존 전체 스냅샷 전송 (접속 직후 1회)
+ * 포함: monsters, drops(미수집), serverTime
+ */
 export function sendZoneSnapshot(socketId: string, zoneId: string, monsters: MonsterInstance[]): void {
-  emitToSocket(socketId, S2C.ZONE_SNAPSHOT, { zoneId, monsters });
+  const drops = getDropsByZone(zoneId);
+  emitToSocket(socketId, S2C.ZONE_SNAPSHOT, {
+    zoneId,
+    monsters,
+    drops,
+    serverTime: Date.now(),
+  });
 }
 
 /** 몬스터 상태 변경 브로드캐스트 */
@@ -39,6 +48,11 @@ export function sendPlayerHit(socketId: string, damage: number, remainHp: number
 /** 플레이어 사망 */
 export function sendPlayerDied(socketId: string): void {
   emitToSocket(socketId, S2C.PLAYER_DIED, {});
+}
+
+/** 플레이어 부활 완료 (해당 유저에게만) */
+export function sendPlayerRevived(socketId: string, hp: number): void {
+  emitToSocket(socketId, S2C.PLAYER_REVIVED, { hp });
 }
 
 /** 드랍 생성 브로드캐스트 */

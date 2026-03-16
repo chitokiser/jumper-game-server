@@ -12,15 +12,22 @@ export interface ZoneRuntimeState {
   players: Set<string>;
   /** 마지막 활성 tick 시각 */
   lastTickAt: number;
+  /** 마지막 클라이언트 브로드캐스트 시각 */
+  lastBroadcastAt: number;
 }
 
 const states = new Map<string, ZoneRuntimeState>();
 
 export function getOrCreateZoneState(zoneId: string): ZoneRuntimeState {
   if (!states.has(zoneId)) {
-    states.set(zoneId, { zoneId, players: new Set(), lastTickAt: 0 });
+    states.set(zoneId, { zoneId, players: new Set(), lastTickAt: 0, lastBroadcastAt: 0 });
   }
   return states.get(zoneId)!;
+}
+
+export function setLastBroadcastAt(zoneId: string, t: number): void {
+  const s = states.get(zoneId);
+  if (s) s.lastBroadcastAt = t;
 }
 
 export function addPlayerToZone(zoneId: string, userId: string): void {

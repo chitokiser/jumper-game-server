@@ -18,6 +18,8 @@ export const C2S = {
   PLAYER_ATTACK:   'player:attack',
   /** 스킬 사용: { skillId, monsterId? } */
   PLAYER_SKILL:    'player:skill',
+  /** 부활 요청 (사망 후 클라이언트에서 호출) */
+  PLAYER_REVIVE:   'player:revive',
 } as const;
 
 /** 서버 → 클라이언트 */
@@ -36,6 +38,8 @@ export const S2C = {
   PLAYER_DIED:       'player:died',
   /** 드랍 생성 */
   DROP_SPAWNED:      'drop:spawned',
+  /** 플레이어 부활 완료 */
+  PLAYER_REVIVED:    'player:revived',
   /** 에러 알림 */
   ERROR:             'error',
 } as const;

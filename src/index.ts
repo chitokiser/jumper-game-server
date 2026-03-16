@@ -29,7 +29,7 @@ import { getDefaultWorldData } from './config/defaultWorldData.js';
 import {
   initSocketGateway, getUserId,
 } from './modules/gateway/socketGateway.js';
-import { joinZone, updateLocation, leaveZone } from './modules/player/playerSessionManager.js';
+import { joinZone, updateLocation, leaveZone, revivePlayer } from './modules/player/playerSessionManager.js';
 import { resolvePlayerAttack } from './modules/combat/combatResolver.js';
 
 // ── World Engine ──────────────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ async function bootstrap(): Promise<void> {
       const userId = getUserId(socketId);
       if (userId) resolvePlayerAttack(userId, data.monsterId);
     },
+    onRevive:   (socketId)       => revivePlayer(socketId),
   });
 
   // 3. 서버 시작

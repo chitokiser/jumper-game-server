@@ -39,8 +39,17 @@ export function updatePlayerLocation(
   if (!p) return;
   p.lat = lat; p.lng = lng; p.accuracy = accuracy;
   p.lastSeenAt = Date.now();
-  // 실제 이동이 있으면 lastMoveAt 갱신
   p.lastMoveAt = Date.now();
+}
+
+/**
+ * 순간이동 감지 시: 위치는 무시하고 lastSeenAt만 갱신
+ * (타임아웃 방지 + 위치 보류)
+ */
+export function updatePlayerSeenAt(userId: string): void {
+  const p = store.get(userId);
+  if (!p) return;
+  p.lastSeenAt = Date.now();
 }
 
 /** socketId 바인딩 */

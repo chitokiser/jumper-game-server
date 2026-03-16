@@ -7,6 +7,11 @@
  * - C2S 이벤트 수신 → 각 서비스로 위임
  * - S2C 이벤트 전송 API 제공
  *
+ * disconnect grace period:
+ * - 연결 끊김 즉시 세션 삭제 대신 DISCONNECT_GRACE_MS 동안 대기
+ * - 유예 시간 안에 같은 userId로 재접속하면 세션 유지
+ * - 유예 시간 초과 시 leaveZone 처리
+ *
  * ⚠️ Git 저장소: github.com/chitokiser/jumper-game-server
  *    이 파일 수정 후 반드시 game-server 폴더에서 별도 push
  */
@@ -14,6 +19,7 @@
 import { Server as HttpServer } from 'http';
 import { Server as IOServer, Socket } from 'socket.io';
 import { ENV } from '../../config/env.js';
+import { DISCONNECT_GRACE_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 import { C2S, S2C } from './eventNames.js';
 
@@ -23,6 +29,7 @@ export type GatewayHandlers = {
   onLocation: (socketId: string, data: LocationPayload) => void;
   onLeave:    (socketId: string)                        => void;
   onAttack:   (socketId: string, data: AttackPayload)   => void;
+  onRevive:   (socketId: string)                        => void;
 };
 
 export interface JoinPayload {
@@ -39,9 +46,15 @@ export interface AttackPayload {
 /** socketId → userId 매핑 */
 const socketToUser = new Map<string, string>();
 
+/** userId → 재접속 유예 타이머 (disconnect 후 일정 시간 대기) */
+const pendingDisconnects = new Map<string, { socketId: string; timer: ReturnType<typeof setTimeout> }>();
+
 let io: IOServer | null = null;
+let _handlers: GatewayHandlers | null = null;
 
 export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandlers): IOServer {
+  _handlers = handlers;
+
   io = new IOServer(httpServer, {
     cors: {
       origin: ENV.ALLOWED_ORIGINS,
@@ -53,8 +66,17 @@ export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandl
     logger.info('gateway', `client connected: ${socket.id}`);
 
     socket.on(C2S.PLAYER_JOIN, (data: JoinPayload) => {
+      // 재접속 유예 중이던 같은 userId → 타이머 취소, 세션 유지
+      const pending = pendingDisconnects.get(data.userId);
+      if (pending) {
+        clearTimeout(pending.timer);
+        socketToUser.delete(pending.socketId);   // 구소켓 매핑 제거
+        pendingDisconnects.delete(data.userId);
+        logger.info('gateway', `${data.userId} reconnected within grace period`);
+      }
+
       socketToUser.set(socket.id, data.userId);
-      socket.join(data.zoneId); // Socket.io room = zone
+      socket.join(data.zoneId);
       handlers.onJoin(socket.id, data);
     });
 
@@ -66,15 +88,30 @@ export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandl
       handlers.onAttack(socket.id, data);
     });
 
+    socket.on(C2S.PLAYER_REVIVE, () => {
+      handlers.onRevive(socket.id);
+    });
+
     socket.on(C2S.PLAYER_LEAVE, () => {
       handlers.onLeave(socket.id);
       socketToUser.delete(socket.id);
     });
 
     socket.on('disconnect', () => {
-      logger.info('gateway', `client disconnected: ${socket.id}`);
-      handlers.onLeave(socket.id);
-      socketToUser.delete(socket.id);
+      const userId = socketToUser.get(socket.id);
+      if (!userId) return;
+
+      logger.info('gateway', `client disconnected: ${socket.id} (${userId}), grace ${DISCONNECT_GRACE_MS}ms`);
+
+      // 유예 타이머 시작 — 시간 내 재접속하면 취소됨
+      const timer = setTimeout(() => {
+        pendingDisconnects.delete(userId);
+        socketToUser.delete(socket.id);
+        handlers.onLeave(socket.id);
+        logger.info('gateway', `grace expired: ${userId} removed`);
+      }, DISCONNECT_GRACE_MS);
+
+      pendingDisconnects.set(userId, { socketId: socket.id, timer });
     });
   });
 
