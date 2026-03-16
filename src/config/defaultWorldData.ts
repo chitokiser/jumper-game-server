@@ -101,6 +101,24 @@ export function getDefaultWorldData(): {
         maxHp:            2000,
       },
 
+      // ── oceanpark-a : dragon (테스트용 1마리, respawn 60s) ──────────────────
+      {
+        spawnId:          'spawn-opa-dragon-001',
+        zoneId:           'oceanpark-a',
+        monsterType:      'dragon',
+        lat:              20.9720,
+        lng:              105.9372,
+        respawnSeconds:   60,    // 테스트용 단축 — 운영 시 300 이상 권장
+        maxCount:         1,
+        active:           true,
+        aggroRangeM:      25,
+        attackRangeM:     20,   // GPS 정밀도 감안 (spec 4m → 실용값 20m)
+        moveSpeed:        0.8,
+        attackPower:      25,
+        attackCooldownMs: 1800,
+        maxHp:            300,
+      },
+
       // ── oceanpark-b ─────────────────────────────────────────────────────────
       {
         spawnId:          'spawn-opb-001',
