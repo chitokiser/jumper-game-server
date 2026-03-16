@@ -12,6 +12,7 @@
 
 import { MonsterInstance } from '../../types/monster.js';
 import { getAllMonsters, setMonster } from './monsterInstanceStore.js';
+import { clearPatrolState } from './monsterAiService.js';
 import {
   broadcastMonsterRespawned,
   broadcastMonsterUpdate,
@@ -55,6 +56,7 @@ export function tickRespawn(): void {
   for (const m of all) {
     // 1단계: dead → respawning
     if (m.state === 'dead' && m.respawnAt !== null && t >= m.respawnAt) {
+      clearPatrolState(m.monsterId);
       const respawning: MonsterInstance = {
         ...m,
         hp:             m.maxHp,

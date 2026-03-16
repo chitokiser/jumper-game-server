@@ -15,11 +15,34 @@
 import { MonsterInstance } from '../../types/monster.js';
 import { getPlayer } from '../player/playerStateStore.js';
 import { findNearestTarget, isTargetStillValid } from './monsterTargetService.js';
-import { setMonster } from './monsterInstanceStore.js';
+/** 몬스터 사망/리스폰 시 순찰 상태 초기화 (외부에서 호출) */
+export function clearPatrolState(monsterId: string): void {
+  _patrolWaypoints.delete(monsterId);
+}
 import { haversineM, moveToward } from '../../lib/geo.js';
 import { now } from '../../lib/time.js';
 
 const ARRIVE_THRESHOLD_M = 3; // 이 거리 이하면 도착으로 간주
+
+// ── 순찰 웨이포인트 (MonsterInstance 외부 상태) ──────────────────────────────
+interface PatrolWaypoint { lat: number; lng: number; setAt: number }
+const _patrolWaypoints = new Map<string, PatrolWaypoint>();
+/** 웨이포인트 교체 주기 (ms) */
+const PATROL_CHANGE_MS = 8_000;
+
+/** 순찰 반경 (m) — aggroRangeM 의 25%, 최대 60m */
+function patrolRadius(m: MonsterInstance): number {
+  return Math.min(60, m.aggroRangeM * 0.25);
+}
+
+/** 스폰 기준 랜덤 오프셋 좌표 생성 */
+function randomPatrolPoint(m: MonsterInstance): PatrolWaypoint {
+  const r   = Math.random() * patrolRadius(m);
+  const ang = Math.random() * 2 * Math.PI;
+  const dLat = (r * Math.cos(ang)) / 111_320;
+  const dLng = (r * Math.sin(ang)) / (111_320 * Math.cos(m.spawnLat * Math.PI / 180));
+  return { lat: m.spawnLat + dLat, lng: m.spawnLng + dLng, setAt: now() };
+}
 
 /** tick마다 한 마리 AI 처리 */
 export function tickMonsterAi(monster: MonsterInstance, deltaMs: number): MonsterInstance {
@@ -43,13 +66,30 @@ export function tickMonsterAi(monster: MonsterInstance, deltaMs: number): Monste
 }
 
 function tickIdle(m: MonsterInstance, stepM: number): MonsterInstance {
-  // 주변 플레이어 탐색
+  // 주변 플레이어 탐색 — 발견 즉시 추격
   const targetId = findNearestTarget(m);
   if (targetId) {
     m.targetUserId = targetId;
     m.state = 'chasing';
+    _patrolWaypoints.delete(m.monsterId);
     return m;
   }
+
+  // 순찰: 주기적으로 랜덤 웨이포인트로 이동
+  const nowMs = now();
+  let wp = _patrolWaypoints.get(m.monsterId);
+  if (!wp || nowMs - wp.setAt >= PATROL_CHANGE_MS) {
+    wp = randomPatrolPoint(m);
+    _patrolWaypoints.set(m.monsterId, wp);
+  }
+
+  const dist = haversineM(m.currentLat, m.currentLng, wp.lat, wp.lng);
+  if (dist > ARRIVE_THRESHOLD_M) {
+    const moved = moveToward(m.currentLat, m.currentLng, wp.lat, wp.lng, stepM);
+    m.currentLat = moved.lat;
+    m.currentLng = moved.lng;
+  }
+
   return m;
 }
 

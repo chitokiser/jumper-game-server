@@ -112,7 +112,7 @@ router.post('/admin/spawns', adminAuth, (req: Request, res: Response) => {
     maxCount:         Number(body.maxCount)          || 1,
     active:           body.active !== false,
     aggroRangeM:      Number(body.aggroRangeM)       || 300,
-    attackRangeM:     Number(body.attackRangeM)      || 100,
+    attackRangeM:     Number(body.attackRangeM)      || 20,
     moveSpeed:        Number(body.moveSpeed)          || 1.0,
     attackPower:      Number(body.attackPower)        || 25,
     attackCooldownMs: Number(body.attackCooldownMs)  || 2000,

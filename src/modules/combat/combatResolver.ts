@@ -10,7 +10,7 @@
  */
 
 import { MonsterInstance } from '../../types/monster.js';
-import { getMonstersByZone, setMonster } from '../monster/monsterInstanceStore.js';
+import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js';
 import { getPlayer } from '../player/playerStateStore.js';
 import { isTrustworthy } from '../player/playerResolver.js';
 import { applyDamageToPlayer, applyDamageToMonster } from './damageService.js';
@@ -73,7 +73,8 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
   const player = getPlayer(userId);
   if (!player || !isTrustworthy(player)) return;
 
-  const monster = getMonstersByZone(player.zoneId).find(m => m.monsterId === monsterId);
+  // zone 불일치 방지: 전체 몬스터에서 검색 (PC 테스트 시 player.zoneId ≠ monster.zoneId 케이스 대응)
+  const monster = getAllMonsters().find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
 
   const damage = player.level * 100;

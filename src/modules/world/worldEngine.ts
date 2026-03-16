@@ -20,7 +20,7 @@
 
 import { TickRunner } from './tickRunner.js';
 import { clearTickBuffer, flushTickBuffer } from './worldEvents.js';
-import { getActiveZones, isZoneActive, getZonePlayers } from '../zone/zoneManager.js';
+import { getActiveZones, isZoneActive } from '../zone/zoneManager.js';
 import { getMonstersByZone, setMonster, getAllMonsters } from '../monster/monsterInstanceStore.js';
 import { getAllPlayers } from '../player/playerStateStore.js';
 import { tickMonsterAi } from '../monster/monsterAiService.js';
@@ -66,27 +66,26 @@ async function worldTick(deltaMs: number): Promise<void> {
   let activeZoneCount = 0;
 
   for (const zoneId of zones) {
-    // 플레이어 없으면 AI/전투 스킵
-    if (!isZoneActive(zoneId)) continue;
-    activeZoneCount++;
+    const active = isZoneActive(zoneId);
+    if (active) activeZoneCount++;
 
     try {
       const monsters = getMonstersByZone(zoneId);
 
-      // AI 상태 갱신
+      // AI 상태 갱신 — 플레이어 없는 존도 실행
+      // (플레이어 퇴장 후 attacking/chasing 상태가 고착되는 것을 방지)
       for (const m of monsters) {
         const updated = tickMonsterAi(m, deltaMs);
         if (updated !== m) {
           setMonster(updated);
-          broadcastMonsterUpdate(zoneId, updated);
+          if (active) broadcastMonsterUpdate(zoneId, updated);
         }
       }
 
-      // 전투 판정 (attacking 상태 몬스터)
-      tickCombat(zoneId);
+      // 전투 판정 — 플레이어가 있는 존만
+      if (active) tickCombat(zoneId);
 
     } catch (err) {
-      // zone 단위 에러 격리: zone A 실패 시 zone B는 계속 처리
       logger.error('worldEngine', `zone tick error [${zoneId}]`, err);
     }
   }
