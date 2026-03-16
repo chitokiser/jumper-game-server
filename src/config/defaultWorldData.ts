@@ -153,6 +153,24 @@ export function getDefaultWorldData(): {
         maxHp:            2000,
       },
 
+      // ── ecopark-a : dragon (테스트용 1마리) ─────────────────────────────────
+      {
+        spawnId:          'spawn-eco-dragon-001',
+        zoneId:           'ecopark-a',
+        monsterType:      'dragon',
+        lat:              20.94883595103191,
+        lng:              105.97426030733754,
+        respawnSeconds:   60,
+        maxCount:         1,
+        active:           true,
+        aggroRangeM:      25,
+        attackRangeM:     20,
+        moveSpeed:        0.8,
+        attackPower:      25,
+        attackCooldownMs: 1800,
+        maxHp:            300,
+      },
+
       // ── ecopark-a ───────────────────────────────────────────────────────────
       {
         spawnId:          'spawn-eco-001',
