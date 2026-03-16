@@ -24,8 +24,8 @@ exports.MAX_TRUST_ACCURACY_M = 100;
 /**
  * GPS 오차 대응 상수
  */
-/** 타겟 선정 시 허용 accuracy 한계 (미터) — 전투 판정(100m)보다 엄격 */
-exports.AGGRO_MAX_ACCURACY_M = 30;
+/** 타겟 선정 시 허용 accuracy 한계 (미터) — 전투 판정과 동일하게 완화 */
+exports.AGGRO_MAX_ACCURACY_M = 100;
 /** 어그로 해제 거리 배수 (히스테리시스)
  * 시작: aggroRangeM 안에 들어오면 어그로
  * 해제: aggroRangeM * AGGRO_RELEASE_MULTIPLIER 밖으로 벗어나야 해제
@@ -38,8 +38,8 @@ exports.TARGETING_MAX_STALE_MS = 10000;
  * 15 m/s ≈ 54 km/h (도보/뛰기 범위를 크게 초과)
  */
 exports.MAX_REASONABLE_SPEED_MS = 15;
-/** 순간이동 판정 최소 거리 (미터) — 이 미만은 GPS drift 허용 */
-exports.MIN_TELEPORT_DIST_M = 40;
+/** 순간이동 판정 최소 거리 (미터) — 존 내 자유 이동 허용 */
+exports.MIN_TELEPORT_DIST_M = 2000;
 /** 플레이어 기본 레벨당 HP */
 exports.HP_PER_LEVEL = 1000;
 /** 플레이어 기본 레벨당 MP */

@@ -12,7 +12,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.tickCombat = tickCombat;
 exports.resolvePlayerAttack = resolvePlayerAttack;
-const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js");
+const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js"); // getMonstersByZone used in tickCombat
 const playerStateStore_js_1 = require("../player/playerStateStore.js");
 const playerResolver_js_1 = require("../player/playerResolver.js");
 const damageService_js_1 = require("./damageService.js");
@@ -69,13 +69,21 @@ function resolvePlayerAttack(userId, monsterId) {
     const player = (0, playerStateStore_js_1.getPlayer)(userId);
     if (!player || !(0, playerResolver_js_1.isTrustworthy)(player))
         return;
-    const monster = (0, monsterInstanceStore_js_1.getMonstersByZone)(player.zoneId).find(m => m.monsterId === monsterId);
+    // zone 불일치 방지: 전체 몬스터에서 검색 (PC 테스트 시 player.zoneId ≠ monster.zoneId 케이스 대응)
+    const monster = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
     if (!monster || monster.state === 'dead' || monster.state === 'respawning')
         return;
+    // 거리 확인 — 플레이어 공격 범위 20m 고정
+    const PLAYER_ATTACK_RANGE_M = 20;
+    const dist = (0, geo_js_1.haversineM)(player.lat, player.lng, monster.currentLat, monster.currentLng);
+    if (dist > PLAYER_ATTACK_RANGE_M) {
+        logger_js_1.logger.debug('combat', `player ${userId} attack out of range: ${dist.toFixed(1)}m`);
+        return;
+    }
     const damage = player.level * 100;
     const { died } = (0, damageService_js_1.applyDamageToMonster)(monsterId, damage);
     (0, attackCooldownService_js_1.recordPlayerAttack)(userId);
-    logger_js_1.logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage}`);
+    logger_js_1.logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage} (dist=${dist.toFixed(1)}m)`);
     if (died) {
         const spawn = (0, spawnConfigLoader_js_1.getSpawnConfig)(monster.spawnId);
         const respawnSeconds = spawn?.respawnSeconds ?? 300;
@@ -85,7 +93,7 @@ function resolvePlayerAttack(userId, monsterId) {
         (0, dropService_js_1.generateDrop)(dead);
     }
     else {
-        const updated = (0, monsterInstanceStore_js_1.getMonstersByZone)(player.zoneId).find(m => m.monsterId === monsterId);
+        const updated = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
         if (updated)
             (0, clientSyncService_js_1.broadcastMonsterUpdate)(updated.zoneId, updated);
     }

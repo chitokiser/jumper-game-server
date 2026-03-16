@@ -13,11 +13,32 @@
  * ⚠️ 1차: 복잡한 길찾기 없음, 직선 이동만 구현
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.clearPatrolState = clearPatrolState;
 exports.tickMonsterAi = tickMonsterAi;
 const playerStateStore_js_1 = require("../player/playerStateStore.js");
 const monsterTargetService_js_1 = require("./monsterTargetService.js");
+/** 몬스터 사망/리스폰 시 순찰 상태 초기화 (외부에서 호출) */
+function clearPatrolState(monsterId) {
+    _patrolWaypoints.delete(monsterId);
+}
 const geo_js_1 = require("../../lib/geo.js");
+const time_js_1 = require("../../lib/time.js");
 const ARRIVE_THRESHOLD_M = 3; // 이 거리 이하면 도착으로 간주
+const _patrolWaypoints = new Map();
+/** 웨이포인트 교체 주기 (ms) */
+const PATROL_CHANGE_MS = 8000;
+/** 순찰 반경 (m) — aggroRangeM 의 25%, 최대 60m */
+function patrolRadius(m) {
+    return Math.min(60, m.aggroRangeM * 0.25);
+}
+/** 스폰 기준 랜덤 오프셋 좌표 생성 */
+function randomPatrolPoint(m) {
+    const r = Math.random() * patrolRadius(m);
+    const ang = Math.random() * 2 * Math.PI;
+    const dLat = (r * Math.cos(ang)) / 111320;
+    const dLng = (r * Math.sin(ang)) / (111320 * Math.cos(m.spawnLat * Math.PI / 180));
+    return { lat: m.spawnLat + dLat, lng: m.spawnLng + dLng, setAt: (0, time_js_1.now)() };
+}
 /** tick마다 한 마리 AI 처리 */
 function tickMonsterAi(monster, deltaMs) {
     if (monster.state === 'dead' || monster.state === 'respawning')
@@ -37,12 +58,26 @@ function tickMonsterAi(monster, deltaMs) {
     return m;
 }
 function tickIdle(m, stepM) {
-    // 주변 플레이어 탐색
+    // 주변 플레이어 탐색 — 발견 즉시 추격
     const targetId = (0, monsterTargetService_js_1.findNearestTarget)(m);
     if (targetId) {
         m.targetUserId = targetId;
         m.state = 'chasing';
+        _patrolWaypoints.delete(m.monsterId);
         return m;
+    }
+    // 순찰: 주기적으로 랜덤 웨이포인트로 이동
+    const nowMs = (0, time_js_1.now)();
+    let wp = _patrolWaypoints.get(m.monsterId);
+    if (!wp || nowMs - wp.setAt >= PATROL_CHANGE_MS) {
+        wp = randomPatrolPoint(m);
+        _patrolWaypoints.set(m.monsterId, wp);
+    }
+    const dist = (0, geo_js_1.haversineM)(m.currentLat, m.currentLng, wp.lat, wp.lng);
+    if (dist > ARRIVE_THRESHOLD_M) {
+        const moved = (0, geo_js_1.moveToward)(m.currentLat, m.currentLng, wp.lat, wp.lng, stepM);
+        m.currentLat = moved.lat;
+        m.currentLng = moved.lng;
     }
     return m;
 }

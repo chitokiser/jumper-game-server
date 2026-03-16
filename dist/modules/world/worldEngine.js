@@ -61,25 +61,26 @@ async function worldTick(deltaMs) {
     const zones = (0, zoneManager_js_1.getActiveZones)();
     let activeZoneCount = 0;
     for (const zoneId of zones) {
-        // 플레이어 없으면 AI/전투 스킵
-        if (!(0, zoneManager_js_1.isZoneActive)(zoneId))
-            continue;
-        activeZoneCount++;
+        const active = (0, zoneManager_js_1.isZoneActive)(zoneId);
+        if (active)
+            activeZoneCount++;
         try {
             const monsters = (0, monsterInstanceStore_js_1.getMonstersByZone)(zoneId);
-            // AI 상태 갱신
+            // AI 상태 갱신 — 플레이어 없는 존도 실행
+            // (플레이어 퇴장 후 attacking/chasing 상태가 고착되는 것을 방지)
             for (const m of monsters) {
                 const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs);
                 if (updated !== m) {
                     (0, monsterInstanceStore_js_1.setMonster)(updated);
-                    (0, clientSyncService_js_1.broadcastMonsterUpdate)(zoneId, updated);
+                    if (active)
+                        (0, clientSyncService_js_1.broadcastMonsterUpdate)(zoneId, updated);
                 }
             }
-            // 전투 판정 (attacking 상태 몬스터)
-            (0, combatResolver_js_1.tickCombat)(zoneId);
+            // 전투 판정 — 플레이어가 있는 존만
+            if (active)
+                (0, combatResolver_js_1.tickCombat)(zoneId);
         }
         catch (err) {
-            // zone 단위 에러 격리: zone A 실패 시 zone B는 계속 처리
             logger_js_1.logger.error('worldEngine', `zone tick error [${zoneId}]`, err);
         }
     }

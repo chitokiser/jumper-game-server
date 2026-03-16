@@ -14,6 +14,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.markAsDead = markAsDead;
 exports.tickRespawn = tickRespawn;
 const monsterInstanceStore_js_1 = require("./monsterInstanceStore.js");
+const monsterAiService_js_1 = require("./monsterAiService.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
 const time_js_1 = require("../../lib/time.js");
 const constants_js_1 = require("../../config/constants.js");
@@ -50,6 +51,7 @@ function tickRespawn() {
     for (const m of all) {
         // 1단계: dead → respawning
         if (m.state === 'dead' && m.respawnAt !== null && t >= m.respawnAt) {
+            (0, monsterAiService_js_1.clearPatrolState)(m.monsterId);
             const respawning = {
                 ...m,
                 hp: m.maxHp,

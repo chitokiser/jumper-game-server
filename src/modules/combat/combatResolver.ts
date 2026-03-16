@@ -10,7 +10,7 @@
  */
 
 import { MonsterInstance } from '../../types/monster.js';
-import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js';
+import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js'; // getMonstersByZone used in tickCombat
 import { getPlayer } from '../player/playerStateStore.js';
 import { isTrustworthy } from '../player/playerResolver.js';
 import { applyDamageToPlayer, applyDamageToMonster } from './damageService.js';
@@ -77,11 +77,19 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
   const monster = getAllMonsters().find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
 
+  // 거리 확인 — 플레이어 공격 범위 20m 고정
+  const PLAYER_ATTACK_RANGE_M = 20;
+  const dist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
+  if (dist > PLAYER_ATTACK_RANGE_M) {
+    logger.debug('combat', `player ${userId} attack out of range: ${dist.toFixed(1)}m`);
+    return;
+  }
+
   const damage = player.level * 100;
   const { died } = applyDamageToMonster(monsterId, damage);
   recordPlayerAttack(userId);
 
-  logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage}`);
+  logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage} (dist=${dist.toFixed(1)}m)`);
 
   if (died) {
     const spawn = getSpawnConfig(monster.spawnId);
@@ -91,7 +99,7 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
     // 드랍 생성
     generateDrop(dead);
   } else {
-    const updated = getMonstersByZone(player.zoneId).find(m => m.monsterId === monsterId);
+    const updated = getAllMonsters().find(m => m.monsterId === monsterId);
     if (updated) broadcastMonsterUpdate(updated.zoneId, updated);
   }
 }
