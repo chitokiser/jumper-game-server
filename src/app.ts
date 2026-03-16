@@ -10,6 +10,7 @@ import express from 'express';
 import cors from 'cors';
 import { ENV } from './config/env.js';
 import healthRouter from './routes/health.js';
+import adminRouter  from './routes/admin.js';
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.use(cors({ origin: ENV.ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.use('/', healthRouter);
+app.use('/', adminRouter);
 
 export default app;

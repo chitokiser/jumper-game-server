@@ -15,4 +15,6 @@ export const ENV = {
     ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
     : '*',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+  /** 관리자 REST API 인증 키 (X-Admin-Key 헤더) */
+  ADMIN_SECRET: process.env.ADMIN_SECRET || 'jumper-admin-dev',
 } as const;

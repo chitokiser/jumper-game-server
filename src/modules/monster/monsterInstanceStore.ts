@@ -44,3 +44,17 @@ export function getDeadMonsters(): MonsterInstance[] {
     m => m.state === 'dead' || m.state === 'respawning',
   );
 }
+
+/** 특정 SpawnPoint의 모든 인스턴스 반환 */
+export function getMonstersBySpawn(spawnId: string): MonsterInstance[] {
+  return [...store.values()].filter(m => m.spawnId === spawnId);
+}
+
+/** 특정 SpawnPoint의 모든 인스턴스 제거 후 제거된 monsterId 목록 반환 */
+export function removeMonstersBySpawn(spawnId: string): string[] {
+  const ids = [...store.values()]
+    .filter(m => m.spawnId === spawnId)
+    .map(m => m.monsterId);
+  ids.forEach(id => store.delete(id));
+  return ids;
+}
