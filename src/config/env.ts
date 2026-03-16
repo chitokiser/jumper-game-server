@@ -10,8 +10,9 @@ dotenv.config();
 export const ENV = {
   PORT: Number(process.env.PORT) || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  /** CORS 허용 오리진 (콤마 구분) */
-  ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || 'http://localhost:5501,http://127.0.0.1:5501')
-    .split(',').map(s => s.trim()).filter(Boolean),
+  /** CORS 허용 오리진 (콤마 구분, 미설정 시 전체 허용) */
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+    : '*',
   LOG_LEVEL: process.env.LOG_LEVEL || 'info',
 } as const;
