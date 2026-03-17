@@ -78,7 +78,9 @@ async function worldTick(deltaMs: number): Promise<void> {
         const updated = tickMonsterAi(m, deltaMs);
         if (updated !== m) {
           setMonster(updated);
-          if (active) broadcastMonsterUpdate(zoneId, updated);
+          // 비활성 존도 상태 전환(attacking→return 등)은 broadcast — 재접속 시 stale 방지
+          const stateChanged = updated.state !== m.state;
+          if (active || stateChanged) broadcastMonsterUpdate(zoneId, updated);
         }
       }
 

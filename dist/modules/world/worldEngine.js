@@ -72,7 +72,9 @@ async function worldTick(deltaMs) {
                 const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs);
                 if (updated !== m) {
                     (0, monsterInstanceStore_js_1.setMonster)(updated);
-                    if (active)
+                    // 비활성 존도 상태 전환(attacking→return 등)은 broadcast — 재접속 시 stale 방지
+                    const stateChanged = updated.state !== m.state;
+                    if (active || stateChanged)
                         (0, clientSyncService_js_1.broadcastMonsterUpdate)(zoneId, updated);
                 }
             }

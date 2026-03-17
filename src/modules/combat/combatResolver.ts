@@ -77,19 +77,11 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
   const monster = getAllMonsters().find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
 
-  // 거리 확인 — 플레이어 공격 범위 20m 고정
-  const PLAYER_ATTACK_RANGE_M = 20;
-  const dist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
-  if (dist > PLAYER_ATTACK_RANGE_M) {
-    logger.debug('combat', `player ${userId} attack out of range: ${dist.toFixed(1)}m`);
-    return;
-  }
-
   const damage = player.level * 100;
   const { died } = applyDamageToMonster(monsterId, damage);
   recordPlayerAttack(userId);
 
-  logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage} (dist=${dist.toFixed(1)}m)`);
+  logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage}`);
 
   if (died) {
     const spawn = getSpawnConfig(monster.spawnId);
