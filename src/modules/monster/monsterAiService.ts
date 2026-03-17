@@ -44,8 +44,10 @@ function randomPatrolPoint(m: MonsterInstance): PatrolWaypoint {
   return { lat: m.spawnLat + dLat, lng: m.spawnLng + dLng, setAt: now() };
 }
 
-/** tick마다 한 마리 AI 처리 */
-export function tickMonsterAi(monster: MonsterInstance, deltaMs: number): MonsterInstance {
+/** tick마다 한 마리 AI 처리
+ * @param zoneActive 존에 플레이어가 있으면 true — false이면 순찰 이동 스킵 (spawn 위치 유지)
+ */
+export function tickMonsterAi(monster: MonsterInstance, deltaMs: number, zoneActive = true): MonsterInstance {
   if (monster.state === 'dead' || monster.state === 'respawning') return monster;
 
   const m = { ...monster };
@@ -53,10 +55,14 @@ export function tickMonsterAi(monster: MonsterInstance, deltaMs: number): Monste
 
   switch (m.state) {
     case 'idle':
-      return tickIdle(m, stepM);
+      // 비활성 존: 순찰 이동 스킵 — spawn 위치에 고정
+      return zoneActive ? tickIdle(m, stepM) : m;
     case 'chasing':
+      // 비활성 존: chasing/attacking 상태 해제 → return으로 전환
+      if (!zoneActive) { m.targetUserId = null; m.state = 'return'; return m; }
       return tickChasing(m, stepM);
     case 'attacking':
+      if (!zoneActive) { m.targetUserId = null; m.state = 'return'; return m; }
       return tickAttacking(m);
     case 'return':
       return tickReturn(m, stepM);
