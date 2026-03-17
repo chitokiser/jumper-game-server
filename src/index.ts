@@ -18,9 +18,10 @@ import { createServer } from 'http';
 import app from './app.js';
 import { ENV } from './config/env.js';
 import { logger } from './lib/logger.js';
+import { initFirebaseAdmin } from './lib/firebaseAdmin.js';
 
 // ── 월드 데이터 로드 ──────────────────────────────────────────────────────────
-import { loadSpawnConfig, getLoadedZoneConfigs, getAllSpawnConfigs } from './modules/admin/spawnConfigLoader.js';
+import { loadSpawnConfig, getLoadedZoneConfigs, getAllSpawnConfigs, loadAdminSpawnsFromFirestore } from './modules/admin/spawnConfigLoader.js';
 import { registerZone } from './modules/zone/zoneRegistry.js';
 import { initAllSpawns } from './modules/monster/monsterSpawnService.js';
 import { getDefaultWorldData } from './config/defaultWorldData.js';
@@ -36,7 +37,10 @@ import { resolvePlayerAttack } from './modules/combat/combatResolver.js';
 import { startWorldEngine } from './modules/world/worldEngine.js';
 
 async function bootstrap(): Promise<void> {
-  // 1. 월드 데이터 로드
+  // 1. Firebase Admin 초기화 (스폰 영구저장용)
+  initFirebaseAdmin();
+
+  // 2. 월드 데이터 로드
   const worldData = getDefaultWorldData();
   loadSpawnConfig(worldData);
   for (const zone of getLoadedZoneConfigs()) {
@@ -44,7 +48,10 @@ async function bootstrap(): Promise<void> {
   }
   logger.info('bootstrap', `loaded ${getLoadedZoneConfigs().length} zones`);
 
-  // 2. HTTP + Socket.io 서버 생성
+  // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
+  await loadAdminSpawnsFromFirestore();
+
+  // 3. HTTP + Socket.io 서버 생성
   const httpServer = createServer(app);
 
   initSocketGateway(httpServer, {

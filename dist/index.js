@@ -22,6 +22,7 @@ const http_1 = require("http");
 const app_js_1 = __importDefault(require("./app.js"));
 const env_js_1 = require("./config/env.js");
 const logger_js_1 = require("./lib/logger.js");
+const firebaseAdmin_js_1 = require("./lib/firebaseAdmin.js");
 // ── 월드 데이터 로드 ──────────────────────────────────────────────────────────
 const spawnConfigLoader_js_1 = require("./modules/admin/spawnConfigLoader.js");
 const zoneRegistry_js_1 = require("./modules/zone/zoneRegistry.js");
@@ -34,14 +35,18 @@ const combatResolver_js_1 = require("./modules/combat/combatResolver.js");
 // ── World Engine ──────────────────────────────────────────────────────────────
 const worldEngine_js_1 = require("./modules/world/worldEngine.js");
 async function bootstrap() {
-    // 1. 월드 데이터 로드
+    // 1. Firebase Admin 초기화 (스폰 영구저장용)
+    (0, firebaseAdmin_js_1.initFirebaseAdmin)();
+    // 2. 월드 데이터 로드
     const worldData = (0, defaultWorldData_js_1.getDefaultWorldData)();
     (0, spawnConfigLoader_js_1.loadSpawnConfig)(worldData);
     for (const zone of (0, spawnConfigLoader_js_1.getLoadedZoneConfigs)()) {
         (0, zoneRegistry_js_1.registerZone)(zone);
     }
     logger_js_1.logger.info('bootstrap', `loaded ${(0, spawnConfigLoader_js_1.getLoadedZoneConfigs)().length} zones`);
-    // 2. HTTP + Socket.io 서버 생성
+    // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
+    await (0, spawnConfigLoader_js_1.loadAdminSpawnsFromFirestore)();
+    // 3. HTTP + Socket.io 서버 생성
     const httpServer = (0, http_1.createServer)(app_js_1.default);
     (0, socketGateway_js_1.initSocketGateway)(httpServer, {
         onJoin: (socketId, data) => (0, playerSessionManager_js_1.joinZone)(socketId, data),
