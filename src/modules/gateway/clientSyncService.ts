@@ -59,3 +59,13 @@ export function sendPlayerRevived(socketId: string, hp: number): void {
 export function broadcastDropSpawned(zoneId: string, drop: DropInstance): void {
   emitToZone(zoneId, S2C.DROP_SPAWNED, drop);
 }
+
+/** 드랍 제거 브로드캐스트 (만료/수령) */
+export function broadcastDropRemoved(zoneId: string, dropId: string): void {
+  emitToZone(zoneId, S2C.DROP_REMOVED, { dropId });
+}
+
+/** 드랍 수령 완료 (수령자에게만) */
+export function sendDropCollected(socketId: string, dropId: string, gold: number): void {
+  emitToSocket(socketId, S2C.DROP_COLLECTED, { dropId, gold });
+}

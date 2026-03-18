@@ -18,6 +18,7 @@ export interface DropInstance {
   /** treasure_items 컬렉션의 itemId */
   itemId: string;
   count: number;
+  gold?: number;
   createdAt: number;
   /** 드랍 소멸 시각 (기본 5분) */
   expiresAt: number;

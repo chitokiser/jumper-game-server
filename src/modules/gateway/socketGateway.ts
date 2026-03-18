@@ -25,12 +25,13 @@ import { C2S, S2C } from './eventNames.js';
 
 // 순환 참조 방지를 위해 서비스는 주입 방식으로 연결
 export type GatewayHandlers = {
-  onJoin:     (socketId: string, data: JoinPayload)     => void;
-  onLocation: (socketId: string, data: LocationPayload) => void;
-  onLeave:    (socketId: string)                        => void;
-  onAttack:   (socketId: string, data: AttackPayload)   => void;
-  onSkill:    (socketId: string, data: SkillPayload)    => void;
-  onRevive:   (socketId: string)                        => void;
+  onJoin:         (socketId: string, data: JoinPayload)         => void;
+  onLocation:     (socketId: string, data: LocationPayload)     => void;
+  onLeave:        (socketId: string)                            => void;
+  onAttack:       (socketId: string, data: AttackPayload)       => void;
+  onSkill:        (socketId: string, data: SkillPayload)        => void;
+  onRevive:       (socketId: string)                            => void;
+  onDropCollect:  (socketId: string, data: DropCollectPayload)  => void;
 };
 
 export interface JoinPayload {
@@ -46,6 +47,9 @@ export interface AttackPayload {
 export interface SkillPayload {
   skillId: string;   // 'lightning' | 'ice' | 'fire'
   monsterId: string;
+}
+export interface DropCollectPayload {
+  dropId: string;
 }
 
 /** socketId → userId 매핑 */
@@ -95,6 +99,10 @@ export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandl
 
     socket.on(C2S.PLAYER_SKILL, (data: SkillPayload) => {
       handlers.onSkill(socket.id, data);
+    });
+
+    socket.on(C2S.DROP_COLLECT, (data: DropCollectPayload) => {
+      handlers.onDropCollect(socket.id, data);
     });
 
     socket.on(C2S.PLAYER_REVIVE, () => {

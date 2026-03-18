@@ -32,6 +32,7 @@ import {
 } from './modules/gateway/socketGateway.js';
 import { joinZone, updateLocation, leaveZone, revivePlayer } from './modules/player/playerSessionManager.js';
 import { resolvePlayerAttack, resolvePlayerSkill } from './modules/combat/combatResolver.js';
+import { collectDrop } from './modules/drop/dropService.js';
 
 // ── World Engine ──────────────────────────────────────────────────────────────
 import { startWorldEngine } from './modules/world/worldEngine.js';
@@ -66,7 +67,8 @@ async function bootstrap(): Promise<void> {
       const userId = getUserId(socketId);
       if (userId) resolvePlayerSkill(userId, data.skillId, data.monsterId);
     },
-    onRevive:   (socketId)       => revivePlayer(socketId),
+    onRevive:       (socketId)       => revivePlayer(socketId),
+    onDropCollect:  (socketId, data) => collectDrop(socketId, data.dropId),
   });
 
   // 3. 서버 시작
