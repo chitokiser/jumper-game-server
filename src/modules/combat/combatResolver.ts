@@ -77,8 +77,9 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
     logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: no player record`);
     return;
   }
-  if (!isTrustworthy(player)) {
-    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: not trustworthy (state=${player.state}, acc=${player.accuracy})`);
+  // 클릭 기반 공격 — accuracy 무관, state만 체크 (PC 테스트 포함)
+  if (player.state !== 'alive') {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: state=${player.state}`);
     return;
   }
 
