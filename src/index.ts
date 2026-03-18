@@ -31,7 +31,7 @@ import {
   initSocketGateway, getUserId,
 } from './modules/gateway/socketGateway.js';
 import { joinZone, updateLocation, leaveZone, revivePlayer } from './modules/player/playerSessionManager.js';
-import { resolvePlayerAttack } from './modules/combat/combatResolver.js';
+import { resolvePlayerAttack, resolvePlayerSkill } from './modules/combat/combatResolver.js';
 
 // ── World Engine ──────────────────────────────────────────────────────────────
 import { startWorldEngine } from './modules/world/worldEngine.js';
@@ -61,6 +61,10 @@ async function bootstrap(): Promise<void> {
     onAttack:   (socketId, data) => {
       const userId = getUserId(socketId);
       if (userId) resolvePlayerAttack(userId, data.monsterId);
+    },
+    onSkill:    (socketId, data) => {
+      const userId = getUserId(socketId);
+      if (userId) resolvePlayerSkill(userId, data.skillId, data.monsterId);
     },
     onRevive:   (socketId)       => revivePlayer(socketId),
   });

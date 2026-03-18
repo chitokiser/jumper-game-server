@@ -105,7 +105,42 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
     const respawnSeconds = spawn?.respawnSeconds ?? 300;
     const dead = markAsDead(monster, respawnSeconds);
     broadcastMonsterDied(dead.zoneId, dead.monsterId);
-    // 드랍 생성
+    generateDrop(dead);
+  } else {
+    const updated = getAllMonsters().find(m => m.monsterId === monsterId);
+    if (updated) broadcastMonsterUpdate(updated.zoneId, updated);
+  }
+}
+
+/** 스킬 데미지 배율 */
+const SKILL_MULTIPLIER: Record<string, number> = {
+  lightning: 3.0,
+  fire:      2.5,
+  ice:       1.5,
+};
+
+/**
+ * 플레이어 스킬 → 몬스터 (C2S.PLAYER_SKILL 수신 시 호출)
+ * 클라이언트가 범위 내 각 몬스터에 대해 개별 호출
+ */
+export function resolvePlayerSkill(userId: string, skillId: string, monsterId: string): void {
+  const player = getPlayer(userId);
+  if (!player || player.state !== 'alive') return;
+
+  const monster = getAllMonsters().find(m => m.monsterId === monsterId);
+  if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
+
+  const multiplier = SKILL_MULTIPLIER[skillId] ?? 1.0;
+  const damage = Math.round(player.level * 100 * multiplier);
+  const { died } = applyDamageToMonster(monsterId, damage);
+
+  logger.info('combat', `[skill:${skillId}] ${userId.slice(0,8)} hit ${monster.type} for ${damage} (died=${died})`);
+
+  if (died) {
+    const spawn = getSpawnConfig(monster.spawnId);
+    const respawnSeconds = spawn?.respawnSeconds ?? 300;
+    const dead = markAsDead(monster, respawnSeconds);
+    broadcastMonsterDied(dead.zoneId, dead.monsterId);
     generateDrop(dead);
   } else {
     const updated = getAllMonsters().find(m => m.monsterId === monsterId);

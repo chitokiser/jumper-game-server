@@ -29,6 +29,7 @@ export type GatewayHandlers = {
   onLocation: (socketId: string, data: LocationPayload) => void;
   onLeave:    (socketId: string)                        => void;
   onAttack:   (socketId: string, data: AttackPayload)   => void;
+  onSkill:    (socketId: string, data: SkillPayload)    => void;
   onRevive:   (socketId: string)                        => void;
 };
 
@@ -40,6 +41,10 @@ export interface LocationPayload {
   lat: number; lng: number; accuracy: number;
 }
 export interface AttackPayload {
+  monsterId: string;
+}
+export interface SkillPayload {
+  skillId: string;   // 'lightning' | 'ice' | 'fire'
   monsterId: string;
 }
 
@@ -86,6 +91,10 @@ export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandl
 
     socket.on(C2S.PLAYER_ATTACK, (data: AttackPayload) => {
       handlers.onAttack(socket.id, data);
+    });
+
+    socket.on(C2S.PLAYER_SKILL, (data: SkillPayload) => {
+      handlers.onSkill(socket.id, data);
     });
 
     socket.on(C2S.PLAYER_REVIVE, () => {
