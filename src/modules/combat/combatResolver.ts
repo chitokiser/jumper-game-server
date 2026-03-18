@@ -9,7 +9,6 @@
  * 원칙: 모든 HP 확정은 여기서만 한다
  */
 
-import { MonsterInstance } from '../../types/monster.js';
 import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js'; // getMonstersByZone used in tickCombat
 import { getPlayer } from '../player/playerStateStore.js';
 import { isTrustworthy } from '../player/playerResolver.js';
@@ -68,20 +67,37 @@ export function tickCombat(zoneId: string): void {
  * 플레이어 → 몬스터 공격 (C2S.PLAYER_ATTACK 수신 시 호출)
  */
 export function resolvePlayerAttack(userId: string, monsterId: string): void {
-  if (!canPlayerAttack(userId)) return;
+  if (!canPlayerAttack(userId)) {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: cooldown`);
+    return;
+  }
 
   const player = getPlayer(userId);
-  if (!player || !isTrustworthy(player)) return;
+  if (!player) {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: no player record`);
+    return;
+  }
+  if (!isTrustworthy(player)) {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: not trustworthy (state=${player.state}, acc=${player.accuracy})`);
+    return;
+  }
 
   // zone 불일치 방지: 전체 몬스터에서 검색 (PC 테스트 시 player.zoneId ≠ monster.zoneId 케이스 대응)
   const monster = getAllMonsters().find(m => m.monsterId === monsterId);
-  if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
+  if (!monster) {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: monster ${monsterId.slice(0,8)} not found`);
+    return;
+  }
+  if (monster.state === 'dead' || monster.state === 'respawning') {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: monster state=${monster.state}`);
+    return;
+  }
 
   const damage = player.level * 100;
   const { died } = applyDamageToMonster(monsterId, damage);
   recordPlayerAttack(userId);
 
-  logger.debug('combat', `player ${userId} hit monster ${monster.type} for ${damage}`);
+  logger.info('combat', `[attack] ${userId.slice(0,8)} hit ${monster.type} for ${damage} (died=${died})`);
 
   if (died) {
     const spawn = getSpawnConfig(monster.spawnId);
