@@ -66,13 +66,14 @@ async function worldTick(deltaMs) {
             activeZoneCount++;
         try {
             const monsters = (0, monsterInstanceStore_js_1.getMonstersByZone)(zoneId);
-            // AI 상태 갱신 — 플레이어 없는 존도 실행
-            // (플레이어 퇴장 후 attacking/chasing 상태가 고착되는 것을 방지)
+            // AI 상태 갱신
+            // - 활성 존(플레이어 있음): 전체 AI 실행 (추격·순찰·전투)
+            // - 비활성 존: 상태 전환(attacking/chasing→idle/return)만 처리, 순찰 이동 스킵
             for (const m of monsters) {
-                const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs);
+                const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs, active);
                 if (updated !== m) {
                     (0, monsterInstanceStore_js_1.setMonster)(updated);
-                    // 비활성 존도 상태 전환(attacking→return 등)은 broadcast — 재접속 시 stale 방지
+                    // 비활성 존도 상태 전환은 broadcast — 재접속 시 stale 방지
                     const stateChanged = updated.state !== m.state;
                     if (active || stateChanged)
                         (0, clientSyncService_js_1.broadcastMonsterUpdate)(zoneId, updated);

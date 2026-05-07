@@ -22,6 +22,8 @@ exports.C2S = {
     PLAYER_SKILL: 'player:skill',
     /** 부활 요청 (사망 후 클라이언트에서 호출) */
     PLAYER_REVIVE: 'player:revive',
+    /** 드랍 수령: { dropId } */
+    DROP_COLLECT: 'drop:collect',
 };
 /** 서버 → 클라이언트 */
 exports.S2C = {
@@ -39,6 +41,10 @@ exports.S2C = {
     PLAYER_DIED: 'player:died',
     /** 드랍 생성 */
     DROP_SPAWNED: 'drop:spawned',
+    /** 드랍 제거 (수령/만료): { dropId } */
+    DROP_REMOVED: 'drop:removed',
+    /** 드랍 수령 성공 (수령자에게만): { dropId, gold } */
+    DROP_COLLECTED: 'drop:collected',
     /** 플레이어 부활 완료 */
     PLAYER_REVIVED: 'player:revived',
     /** 에러 알림 */

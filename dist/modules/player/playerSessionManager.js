@@ -35,12 +35,13 @@ function joinZone(socketId, data) {
     const maxMp = level * constants_js_1.MP_PER_LEVEL;
     const state = {
         userId, zoneId, lat, lng, accuracy,
-        hp: existing?.hp ?? maxHp,
+        // 재접속 시 사망 상태였다면 HP 절반으로 자동 부활 (공격 불가 방지)
+        hp: existing?.state === 'dead' ? Math.max(1, Math.floor(maxHp / 2)) : (existing?.hp ?? maxHp),
         maxHp,
         mp: existing?.mp ?? maxMp,
         maxMp,
         level,
-        state: existing?.state === 'dead' ? 'dead' : 'alive', // 사망 상태 유지
+        state: 'alive',
         lastSeenAt: (0, time_js_1.now)(),
         lastMoveAt: (0, time_js_1.now)(),
         lastAttackedAt: 0,

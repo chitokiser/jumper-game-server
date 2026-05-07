@@ -63,6 +63,12 @@ function initSocketGateway(httpServer, handlers) {
         socket.on(eventNames_js_1.C2S.PLAYER_ATTACK, (data) => {
             handlers.onAttack(socket.id, data);
         });
+        socket.on(eventNames_js_1.C2S.PLAYER_SKILL, (data) => {
+            handlers.onSkill(socket.id, data);
+        });
+        socket.on(eventNames_js_1.C2S.DROP_COLLECT, (data) => {
+            handlers.onDropCollect(socket.id, data);
+        });
         socket.on(eventNames_js_1.C2S.PLAYER_REVIVE, () => {
             handlers.onRevive(socket.id);
         });

@@ -15,6 +15,8 @@ exports.sendPlayerHit = sendPlayerHit;
 exports.sendPlayerDied = sendPlayerDied;
 exports.sendPlayerRevived = sendPlayerRevived;
 exports.broadcastDropSpawned = broadcastDropSpawned;
+exports.broadcastDropRemoved = broadcastDropRemoved;
+exports.sendDropCollected = sendDropCollected;
 const socketGateway_js_1 = require("./socketGateway.js");
 const eventNames_js_1 = require("./eventNames.js");
 const dropStore_js_1 = require("../drop/dropStore.js");
@@ -57,4 +59,12 @@ function sendPlayerRevived(socketId, hp) {
 /** 드랍 생성 브로드캐스트 */
 function broadcastDropSpawned(zoneId, drop) {
     (0, socketGateway_js_1.emitToZone)(zoneId, eventNames_js_1.S2C.DROP_SPAWNED, drop);
+}
+/** 드랍 제거 브로드캐스트 (만료/수령) */
+function broadcastDropRemoved(zoneId, dropId) {
+    (0, socketGateway_js_1.emitToZone)(zoneId, eventNames_js_1.S2C.DROP_REMOVED, { dropId });
+}
+/** 드랍 수령 완료 (수령자에게만) */
+function sendDropCollected(socketId, dropId, gold) {
+    (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.DROP_COLLECTED, { dropId, gold });
 }

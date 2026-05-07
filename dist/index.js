@@ -32,6 +32,7 @@ const defaultWorldData_js_1 = require("./config/defaultWorldData.js");
 const socketGateway_js_1 = require("./modules/gateway/socketGateway.js");
 const playerSessionManager_js_1 = require("./modules/player/playerSessionManager.js");
 const combatResolver_js_1 = require("./modules/combat/combatResolver.js");
+const dropService_js_1 = require("./modules/drop/dropService.js");
 // ── World Engine ──────────────────────────────────────────────────────────────
 const worldEngine_js_1 = require("./modules/world/worldEngine.js");
 async function bootstrap() {
@@ -57,7 +58,13 @@ async function bootstrap() {
             if (userId)
                 (0, combatResolver_js_1.resolvePlayerAttack)(userId, data.monsterId);
         },
+        onSkill: (socketId, data) => {
+            const userId = (0, socketGateway_js_1.getUserId)(socketId);
+            if (userId)
+                (0, combatResolver_js_1.resolvePlayerSkill)(userId, data.skillId, data.monsterId);
+        },
         onRevive: (socketId) => (0, playerSessionManager_js_1.revivePlayer)(socketId),
+        onDropCollect: (socketId, data) => (0, dropService_js_1.collectDrop)(socketId, data.dropId),
     });
     // 3. 서버 시작
     httpServer.listen(env_js_1.ENV.PORT, () => {

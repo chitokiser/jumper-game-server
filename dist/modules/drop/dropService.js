@@ -4,53 +4,61 @@
  * 드랍 아이템 생성 서비스
  *
  * - 몬스터 사망 시 호출
- * - 실제 인벤토리 지급은 Firebase Functions 담당
- * - 게임 서버는 드랍 위치/아이템 정보만 관리
+ * - 게임 서버는 코인 드랍 위치/금액 관리
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateDrop = generateDrop;
+exports.collectDrop = collectDrop;
 const uuid_1 = require("uuid");
 const dropStore_js_1 = require("./dropStore.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
 const constants_js_1 = require("../../config/constants.js");
 const time_js_1 = require("../../lib/time.js");
 const logger_js_1 = require("../../lib/logger.js");
-/** 몬스터 타입별 드랍 테이블 (단순화) */
-const DROP_TABLE = {
-    goblin: [
-        { itemId: '1', count: 1, chance: 0.8 },
-        { itemId: '2', count: 1, chance: 0.3 },
-    ],
-    orc: [
-        { itemId: '2', count: 1, chance: 0.6 },
-        { itemId: '3', count: 1, chance: 0.4 },
-    ],
-    // 기본값 — 등록되지 않은 타입
-    default: [
-        { itemId: '1', count: 1, chance: 0.5 },
-    ],
+/** 몬스터 타입별 코인 드랍 범위 [min, max] */
+const COIN_DROP = {
+    goblin: [5, 15],
+    pirate: [10, 25],
+    pirate2: [20, 40],
+    pirate3: [35, 60],
+    orc: [25, 45],
+    orc2: [50, 80],
+    orc3: [80, 120],
+    dragon: [200, 350],
+    default: [5, 20],
 };
-/** 몬스터 사망 시 드랍 생성 및 브로드캐스트 */
+function randCoin(type) {
+    const [min, max] = COIN_DROP[type] ?? COIN_DROP.default;
+    return Math.floor(min + Math.random() * (max - min + 1));
+}
+/** 몬스터 사망 시 코인 드랍 생성 및 브로드캐스트 */
 function generateDrop(monster) {
-    const table = DROP_TABLE[monster.type] ?? DROP_TABLE.default;
+    const gold = randCoin(monster.type);
     const t = (0, time_js_1.now)();
-    for (const entry of table) {
-        if (Math.random() > entry.chance)
-            continue;
-        const drop = {
-            dropId: (0, uuid_1.v4)(),
-            zoneId: monster.zoneId,
-            monsterId: monster.monsterId,
-            lat: monster.currentLat,
-            lng: monster.currentLng,
-            itemId: entry.itemId,
-            count: entry.count,
-            createdAt: t,
-            expiresAt: t + constants_js_1.DROP_EXPIRE_MS,
-            claimedBy: null,
-        };
-        (0, dropStore_js_1.setDrop)(drop);
-        (0, clientSyncService_js_1.broadcastDropSpawned)(monster.zoneId, drop);
-        logger_js_1.logger.debug('drop', `drop item=${entry.itemId} from ${monster.type}`);
-    }
+    const drop = {
+        dropId: (0, uuid_1.v4)(),
+        zoneId: monster.zoneId,
+        monsterId: monster.monsterId,
+        lat: monster.currentLat + (Math.random() - 0.5) * 0.00003,
+        lng: monster.currentLng + (Math.random() - 0.5) * 0.00003,
+        itemId: 'gold',
+        count: gold,
+        gold,
+        createdAt: t,
+        expiresAt: t + constants_js_1.DROP_EXPIRE_MS,
+        claimedBy: null,
+    };
+    (0, dropStore_js_1.setDrop)(drop);
+    (0, clientSyncService_js_1.broadcastDropSpawned)(monster.zoneId, drop);
+    logger_js_1.logger.debug('drop', `coin drop ${gold} from ${monster.type}`);
+}
+function collectDrop(socketId, dropId) {
+    const drop = (0, dropStore_js_1.getDrop)(dropId);
+    if (!drop || drop.claimedBy)
+        return;
+    drop.claimedBy = socketId;
+    (0, dropStore_js_1.removeDrop)(dropId);
+    (0, clientSyncService_js_1.broadcastDropRemoved)(drop.zoneId, dropId);
+    (0, clientSyncService_js_1.sendDropCollected)(socketId, dropId, drop.gold ?? drop.count);
+    logger_js_1.logger.debug('drop', `drop ${dropId} collected, gold=${drop.gold ?? drop.count}`);
 }

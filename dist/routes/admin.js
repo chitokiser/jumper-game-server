@@ -23,6 +23,26 @@ const monsterRespawnService_js_1 = require("../modules/monster/monsterRespawnSer
 const clientSyncService_js_1 = require("../modules/gateway/clientSyncService.js");
 const zoneManager_js_1 = require("../modules/zone/zoneManager.js");
 const router = (0, express_1.Router)();
+// ── 타입별 기본 스탯 ───────────────────────────────────────────────────────────
+// 어드민이 스폰 배치 시 monsterType에 따라 합리적인 기본값 자동 적용
+const MONSTER_TYPE_DEFAULTS = {
+    pirate: { maxHp: 300, attackPower: 30, attackRangeM: 20, aggroRangeM: 40, moveSpeed: 1.5, attackCooldownMs: 1500, respawnSeconds: 90 },
+    pirate2: { maxHp: 500, attackPower: 55, attackRangeM: 22, aggroRangeM: 45, moveSpeed: 1.4, attackCooldownMs: 2000, respawnSeconds: 120 },
+    pirate3: { maxHp: 800, attackPower: 85, attackRangeM: 25, aggroRangeM: 50, moveSpeed: 1.3, attackCooldownMs: 2000, respawnSeconds: 180 },
+    orc: { maxHp: 600, attackPower: 60, attackRangeM: 23, aggroRangeM: 50, moveSpeed: 1.2, attackCooldownMs: 2000, respawnSeconds: 150 },
+    orc2: { maxHp: 1000, attackPower: 95, attackRangeM: 27, aggroRangeM: 55, moveSpeed: 1.1, attackCooldownMs: 2200, respawnSeconds: 200 },
+    orc3: { maxHp: 1500, attackPower: 130, attackRangeM: 30, aggroRangeM: 60, moveSpeed: 1.0, attackCooldownMs: 2500, respawnSeconds: 240 },
+    dragon: { maxHp: 3000, attackPower: 160, attackRangeM: 35, aggroRangeM: 100, moveSpeed: 0.8, attackCooldownMs: 3000, respawnSeconds: 300 },
+    goblin: { maxHp: 200, attackPower: 20, attackRangeM: 20, aggroRangeM: 35, moveSpeed: 1.6, attackCooldownMs: 1200, respawnSeconds: 60 },
+};
+/** body 우선, 없으면 타입별 기본값, 그래도 없으면 fallback */
+function resolveSpawnStat(body, typeDefaults, key, fallback) {
+    if (body[key] != null)
+        return body[key];
+    if (typeDefaults[key] != null)
+        return typeDefaults[key];
+    return fallback;
+}
 // ── 인증 미들웨어 ──────────────────────────────────────────────────────────────
 function adminAuth(req, res, next) {
     const key = req.headers['x-admin-key'];
@@ -73,21 +93,22 @@ router.post('/admin/spawns', adminAuth, (req, res) => {
         return;
     }
     const spawnId = body.spawnId || `spawn-admin-${(0, uuid_1.v4)().slice(0, 8)}`;
+    const td = MONSTER_TYPE_DEFAULTS[String(body.monsterType)] ?? {};
     const spawn = {
         spawnId,
         zoneId,
         monsterType: String(body.monsterType),
         lat,
         lng,
-        respawnSeconds: Number(body.respawnSeconds) || 120,
+        respawnSeconds: resolveSpawnStat(body, td, 'respawnSeconds', 120),
         maxCount: Number(body.maxCount) || 1,
         active: body.active !== false,
-        aggroRangeM: Number(body.aggroRangeM) || 300,
-        attackRangeM: Number(body.attackRangeM) || 20,
-        moveSpeed: Number(body.moveSpeed) || 1.0,
-        attackPower: Number(body.attackPower) || 25,
-        attackCooldownMs: Number(body.attackCooldownMs) || 2000,
-        maxHp: Number(body.maxHp) || 300,
+        aggroRangeM: resolveSpawnStat(body, td, 'aggroRangeM', 50),
+        attackRangeM: resolveSpawnStat(body, td, 'attackRangeM', 20),
+        moveSpeed: resolveSpawnStat(body, td, 'moveSpeed', 1.0),
+        attackPower: resolveSpawnStat(body, td, 'attackPower', 30),
+        attackCooldownMs: resolveSpawnStat(body, td, 'attackCooldownMs', 2000),
+        maxHp: resolveSpawnStat(body, td, 'maxHp', 300),
     };
     (0, spawnConfigLoader_js_1.addSpawnConfig)(spawn);
     const created = (0, monsterSpawnService_js_1.fillSpawnPoint)(spawn);
