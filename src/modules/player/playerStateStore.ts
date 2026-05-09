@@ -4,6 +4,7 @@
  */
 
 import { PlayerState } from '../../types/player.js';
+import { Lang, LANG_DEFAULT } from '../../lib/i18n.js';
 
 /** userId → PlayerState */
 const store = new Map<string, PlayerState>();
@@ -65,4 +66,11 @@ export function unbindSocket(socketId: string): string | undefined {
 
 export function getUserIdBySocket(socketId: string): string | undefined {
   return socketToUser.get(socketId);
+}
+
+/** socketId → 플레이어 선호 언어 */
+export function getLangBySocket(socketId: string): Lang {
+  const uid = socketToUser.get(socketId);
+  if (!uid) return LANG_DEFAULT;
+  return store.get(uid)?.lang ?? LANG_DEFAULT;
 }

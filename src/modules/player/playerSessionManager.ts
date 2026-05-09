@@ -13,7 +13,8 @@ import {
   updatePlayerLocation, updatePlayerSeenAt, bindSocket, unbindSocket, getUserIdBySocket,
 } from './playerStateStore.js';
 import { playerEnterZone, playerLeaveZone, resolveZoneId } from '../zone/zoneManager.js';
-import { sendZoneSnapshot, sendPlayerRevived } from '../gateway/clientSyncService.js';
+import { sendZoneSnapshot, sendPlayerRevived, sendNotify } from '../gateway/clientSyncService.js';
+import { parseLang, t } from '../../lib/i18n.js';
 import { getSocketId } from '../gateway/socketGateway.js';
 import { getMonstersByZone } from '../monster/monsterInstanceStore.js';
 import { isTeleport } from './playerResolver.js';
@@ -25,8 +26,10 @@ import { now } from '../../lib/time.js';
 export function joinZone(socketId: string, data: {
   userId: string; zoneId: string;
   lat: number; lng: number; accuracy: number; level: number;
+  lang?: string;
 }): void {
   const { userId, lat, lng, accuracy, level } = data;
+  const lang = parseLang(data.lang);
 
   // zone 유효성 검사: 존재 여부 + 좌표 범위 → 필요 시 가장 가까운 존으로 재배정
   const zoneId = resolveZoneId(data.zoneId, lat, lng) ?? data.zoneId;
@@ -51,6 +54,7 @@ export function joinZone(socketId: string, data: {
     lastSeenAt: now(),
     lastMoveAt: now(),
     lastAttackedAt: 0,
+    lang,
   };
 
   setPlayer(state);
@@ -60,8 +64,9 @@ export function joinZone(socketId: string, data: {
   // 접속 직후 존 스냅샷 전송
   const monsters = getMonstersByZone(zoneId);
   sendZoneSnapshot(socketId, zoneId, monsters);
+  sendNotify(socketId, t(lang, 'zone_joined', zoneId));
 
-  logger.info('playerSession', `${userId} joined zone ${zoneId}`);
+  logger.info('playerSession', `${userId} joined zone ${zoneId} [lang=${lang}]`);
 }
 
 /** 위치 업데이트 (순간이동 감지 시 1회 보류) */
@@ -118,6 +123,7 @@ export function revivePlayer(socketId: string): void {
   setPlayer(updated);
 
   sendPlayerRevived(socketId, revivedHp);
+  sendNotify(socketId, t(updated.lang, 'player_revived', revivedHp));
   logger.info('playerSession', `${userId} revived (hp=${revivedHp})`);
 }
 

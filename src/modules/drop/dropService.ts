@@ -10,7 +10,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { MonsterInstance } from '../../types/monster.js';
 import { DropInstance } from '../../types/drop.js';
 import { setDrop, getDrop, removeDrop } from './dropStore.js';
-import { broadcastDropSpawned, broadcastDropRemoved, sendDropCollected } from '../gateway/clientSyncService.js';
+import { broadcastDropSpawned, broadcastDropRemoved, sendDropCollected, sendNotify } from '../gateway/clientSyncService.js';
+import { getLangBySocket } from '../player/playerStateStore.js';
+import { t } from '../../lib/i18n.js';
 import { DROP_EXPIRE_MS } from '../../config/constants.js';
 import { now } from '../../lib/time.js';
 import { logger } from '../../lib/logger.js';
@@ -65,7 +67,9 @@ export function collectDrop(socketId: string, dropId: string): void {
   removeDrop(dropId);
 
   broadcastDropRemoved(drop.zoneId, dropId);
-  sendDropCollected(socketId, dropId, drop.gold ?? drop.count);
+  const gold = drop.gold ?? drop.count;
+  sendDropCollected(socketId, dropId, gold);
+  sendNotify(socketId, t(getLangBySocket(socketId), 'drop_gold', gold));
 
-  logger.debug('drop', `drop ${dropId} collected, gold=${drop.gold ?? drop.count}`);
+  logger.debug('drop', `drop ${dropId} collected, gold=${gold}`);
 }

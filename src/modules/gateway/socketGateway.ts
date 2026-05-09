@@ -37,6 +37,8 @@ export type GatewayHandlers = {
 export interface JoinPayload {
   userId: string; zoneId: string;
   lat: number; lng: number; accuracy: number; level: number;
+  /** 선호 언어 — 'ko' | 'en' | 'vi' (미제공 시 'en') */
+  lang?: string;
 }
 export interface LocationPayload {
   lat: number; lng: number; accuracy: number;

@@ -7,6 +7,8 @@
  * - 인벤토리·장기 저장 데이터는 Firebase Functions 담당
  */
 
+import { Lang } from '../lib/i18n.js';
+
 export type PlayerStateEnum = 'alive' | 'dead' | 'revive_wait';
 
 export interface PlayerState {
@@ -35,4 +37,6 @@ export interface PlayerState {
   lastMoveAt: number;
   /** 마지막으로 몬스터에게 피격된 시각 */
   lastAttackedAt: number;
+  /** 선호 언어 (ko / en / vi) */
+  lang: Lang;
 }

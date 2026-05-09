@@ -17,6 +17,7 @@ exports.sendPlayerRevived = sendPlayerRevived;
 exports.broadcastDropSpawned = broadcastDropSpawned;
 exports.broadcastDropRemoved = broadcastDropRemoved;
 exports.sendDropCollected = sendDropCollected;
+exports.sendNotify = sendNotify;
 const socketGateway_js_1 = require("./socketGateway.js");
 const eventNames_js_1 = require("./eventNames.js");
 const dropStore_js_1 = require("../drop/dropStore.js");
@@ -67,4 +68,8 @@ function broadcastDropRemoved(zoneId, dropId) {
 /** 드랍 수령 완료 (수령자에게만) */
 function sendDropCollected(socketId, dropId, gold) {
     (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.DROP_COLLECTED, { dropId, gold });
+}
+/** 현지화 알림 메시지 (ko/en/vi) */
+function sendNotify(socketId, msg) {
+    (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.NOTIFY, { msg });
 }

@@ -48,4 +48,6 @@ export const S2C = {
   PLAYER_REVIVED:    'player:revived',
   /** 에러 알림 */
   ERROR:             'error',
+  /** 현지화 알림 메시지 (ko/en/vi): { msg: string } */
+  NOTIFY:            'notify',
 } as const;

@@ -10,14 +10,15 @@
  */
 
 import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js'; // getMonstersByZone used in tickCombat
-import { getPlayer } from '../player/playerStateStore.js';
+import { getPlayer, getLangBySocket } from '../player/playerStateStore.js';
+import { t } from '../../lib/i18n.js';
 import { isTrustworthy } from '../player/playerResolver.js';
 import { applyDamageToPlayer, applyDamageToMonster } from './damageService.js';
 import { canMonsterAttack, canPlayerAttack, recordPlayerAttack } from './attackCooldownService.js';
 import { markAsDead } from '../monster/monsterRespawnService.js';
 import { generateDrop } from '../drop/dropService.js';
 import {
-  sendPlayerHit, sendPlayerDied,
+  sendPlayerHit, sendPlayerDied, sendNotify,
   broadcastMonsterDied, broadcastMonsterUpdate,
 } from '../gateway/clientSyncService.js';
 import { getSocketId } from '../gateway/socketGateway.js';
@@ -56,7 +57,10 @@ export function tickCombat(zoneId: string): void {
     const socketId = getSocketId(target.userId);
     if (socketId) {
       sendPlayerHit(socketId, m.attackPower, remainHp, m.monsterId);
-      if (died) sendPlayerDied(socketId);
+      if (died) {
+        sendPlayerDied(socketId);
+        sendNotify(socketId, t(getLangBySocket(socketId), 'player_died'));
+      }
     }
 
     logger.debug('combat', `monster ${m.type} hit ${target.userId} for ${m.attackPower} (hp=${remainHp})`);

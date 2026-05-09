@@ -12,6 +12,8 @@ exports.collectDrop = collectDrop;
 const uuid_1 = require("uuid");
 const dropStore_js_1 = require("./dropStore.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const playerStateStore_js_1 = require("../player/playerStateStore.js");
+const i18n_js_1 = require("../../lib/i18n.js");
 const constants_js_1 = require("../../config/constants.js");
 const time_js_1 = require("../../lib/time.js");
 const logger_js_1 = require("../../lib/logger.js");
@@ -59,6 +61,8 @@ function collectDrop(socketId, dropId) {
     drop.claimedBy = socketId;
     (0, dropStore_js_1.removeDrop)(dropId);
     (0, clientSyncService_js_1.broadcastDropRemoved)(drop.zoneId, dropId);
-    (0, clientSyncService_js_1.sendDropCollected)(socketId, dropId, drop.gold ?? drop.count);
-    logger_js_1.logger.debug('drop', `drop ${dropId} collected, gold=${drop.gold ?? drop.count}`);
+    const gold = drop.gold ?? drop.count;
+    (0, clientSyncService_js_1.sendDropCollected)(socketId, dropId, gold);
+    (0, clientSyncService_js_1.sendNotify)(socketId, (0, i18n_js_1.t)((0, playerStateStore_js_1.getLangBySocket)(socketId), 'drop_gold', gold));
+    logger_js_1.logger.debug('drop', `drop ${dropId} collected, gold=${gold}`);
 }

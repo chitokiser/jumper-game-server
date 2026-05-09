@@ -16,6 +16,7 @@ exports.sweepTimedOutPlayers = sweepTimedOutPlayers;
 const playerStateStore_js_1 = require("./playerStateStore.js");
 const zoneManager_js_1 = require("../zone/zoneManager.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const i18n_js_1 = require("../../lib/i18n.js");
 const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js");
 const playerResolver_js_1 = require("./playerResolver.js");
 const constants_js_1 = require("../../config/constants.js");
@@ -24,6 +25,7 @@ const time_js_1 = require("../../lib/time.js");
 /** 플레이어 입장 */
 function joinZone(socketId, data) {
     const { userId, lat, lng, accuracy, level } = data;
+    const lang = (0, i18n_js_1.parseLang)(data.lang);
     // zone 유효성 검사: 존재 여부 + 좌표 범위 → 필요 시 가장 가까운 존으로 재배정
     const zoneId = (0, zoneManager_js_1.resolveZoneId)(data.zoneId, lat, lng) ?? data.zoneId;
     // 이미 다른 존에 있으면 퇴장 처리
@@ -45,6 +47,7 @@ function joinZone(socketId, data) {
         lastSeenAt: (0, time_js_1.now)(),
         lastMoveAt: (0, time_js_1.now)(),
         lastAttackedAt: 0,
+        lang,
     };
     (0, playerStateStore_js_1.setPlayer)(state);
     (0, playerStateStore_js_1.bindSocket)(socketId, userId);
@@ -52,7 +55,8 @@ function joinZone(socketId, data) {
     // 접속 직후 존 스냅샷 전송
     const monsters = (0, monsterInstanceStore_js_1.getMonstersByZone)(zoneId);
     (0, clientSyncService_js_1.sendZoneSnapshot)(socketId, zoneId, monsters);
-    logger_js_1.logger.info('playerSession', `${userId} joined zone ${zoneId}`);
+    (0, clientSyncService_js_1.sendNotify)(socketId, (0, i18n_js_1.t)(lang, 'zone_joined', zoneId));
+    logger_js_1.logger.info('playerSession', `${userId} joined zone ${zoneId} [lang=${lang}]`);
 }
 /** 위치 업데이트 (순간이동 감지 시 1회 보류) */
 function updateLocation(socketId, data) {
@@ -103,6 +107,7 @@ function revivePlayer(socketId) {
     };
     (0, playerStateStore_js_1.setPlayer)(updated);
     (0, clientSyncService_js_1.sendPlayerRevived)(socketId, revivedHp);
+    (0, clientSyncService_js_1.sendNotify)(socketId, (0, i18n_js_1.t)(updated.lang, 'player_revived', revivedHp));
     logger_js_1.logger.info('playerSession', `${userId} revived (hp=${revivedHp})`);
 }
 /** 타임아웃된 플레이어 정리 (WorldEngine tick에서 호출) */

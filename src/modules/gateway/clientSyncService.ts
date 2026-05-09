@@ -69,3 +69,8 @@ export function broadcastDropRemoved(zoneId: string, dropId: string): void {
 export function sendDropCollected(socketId: string, dropId: string, gold: number): void {
   emitToSocket(socketId, S2C.DROP_COLLECTED, { dropId, gold });
 }
+
+/** 현지화 알림 메시지 (ko/en/vi) */
+export function sendNotify(socketId: string, msg: string): void {
+  emitToSocket(socketId, S2C.NOTIFY, { msg });
+}

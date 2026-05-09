@@ -15,6 +15,7 @@ exports.resolvePlayerAttack = resolvePlayerAttack;
 exports.resolvePlayerSkill = resolvePlayerSkill;
 const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js"); // getMonstersByZone used in tickCombat
 const playerStateStore_js_1 = require("../player/playerStateStore.js");
+const i18n_js_1 = require("../../lib/i18n.js");
 const playerResolver_js_1 = require("../player/playerResolver.js");
 const damageService_js_1 = require("./damageService.js");
 const attackCooldownService_js_1 = require("./attackCooldownService.js");
@@ -55,8 +56,10 @@ function tickCombat(zoneId) {
         const socketId = (0, socketGateway_js_1.getSocketId)(target.userId);
         if (socketId) {
             (0, clientSyncService_js_1.sendPlayerHit)(socketId, m.attackPower, remainHp, m.monsterId);
-            if (died)
+            if (died) {
                 (0, clientSyncService_js_1.sendPlayerDied)(socketId);
+                (0, clientSyncService_js_1.sendNotify)(socketId, (0, i18n_js_1.t)((0, playerStateStore_js_1.getLangBySocket)(socketId), 'player_died'));
+            }
         }
         logger_js_1.logger.debug('combat', `monster ${m.type} hit ${target.userId} for ${m.attackPower} (hp=${remainHp})`);
     }

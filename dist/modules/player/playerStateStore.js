@@ -14,6 +14,8 @@ exports.updatePlayerSeenAt = updatePlayerSeenAt;
 exports.bindSocket = bindSocket;
 exports.unbindSocket = unbindSocket;
 exports.getUserIdBySocket = getUserIdBySocket;
+exports.getLangBySocket = getLangBySocket;
+const i18n_js_1 = require("../../lib/i18n.js");
 /** userId → PlayerState */
 const store = new Map();
 /** socketId → userId (세션 관리용) */
@@ -64,4 +66,11 @@ function unbindSocket(socketId) {
 }
 function getUserIdBySocket(socketId) {
     return socketToUser.get(socketId);
+}
+/** socketId → 플레이어 선호 언어 */
+function getLangBySocket(socketId) {
+    const uid = socketToUser.get(socketId);
+    if (!uid)
+        return i18n_js_1.LANG_DEFAULT;
+    return store.get(uid)?.lang ?? i18n_js_1.LANG_DEFAULT;
 }
