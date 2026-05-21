@@ -9,7 +9,7 @@
  * 원칙: 모든 HP 확정은 여기서만 한다
  */
 
-import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js'; // getMonstersByZone used in tickCombat
+import { getMonstersByZone, getAllMonsters, setMonster } from '../monster/monsterInstanceStore.js';
 import { getPlayer, getLangBySocket } from '../player/playerStateStore.js';
 import { t } from '../../lib/i18n.js';
 import { isTrustworthy } from '../player/playerResolver.js';
@@ -21,6 +21,8 @@ import {
   sendPlayerHit, sendPlayerDied, sendNotify,
   broadcastMonsterDied, broadcastMonsterUpdate,
 } from '../gateway/clientSyncService.js';
+
+const FREEZE_DURATION_MS = 20_000;
 import { getSocketId } from '../gateway/socketGateway.js';
 import { haversineM } from '../../lib/geo.js';
 import { getSpawnConfig } from '../admin/spawnConfigLoader.js';
@@ -37,6 +39,7 @@ export function tickCombat(zoneId: string): void {
     if (m.state !== 'attacking') continue;
     if (!m.targetUserId) continue;
     if (now() < m.nonCombatUntil) continue; // 리스폰 유예
+    if (now() < (m.frozenUntil ?? 0)) continue; // 얼음 동결 중
 
     if (!canMonsterAttack(m.lastActionAt, m.attackCooldownMs)) continue;
 
@@ -137,6 +140,14 @@ export function resolvePlayerSkill(userId: string, skillId: string, monsterId: s
   const multiplier = SKILL_MULTIPLIER[skillId] ?? 1.0;
   const damage = Math.round(player.level * 100 * multiplier);
   const { died } = applyDamageToMonster(monsterId, damage);
+
+  // 얼음 스킬: 동결 효과 적용 (이동/공격 20초 차단)
+  if (skillId === 'ice' && !died) {
+    const current = getAllMonsters().find(m => m.monsterId === monsterId);
+    if (current) {
+      setMonster({ ...current, frozenUntil: now() + FREEZE_DURATION_MS });
+    }
+  }
 
   logger.info('combat', `[skill:${skillId}] ${userId.slice(0,8)} hit ${monster.type} for ${damage} (died=${died})`);
 

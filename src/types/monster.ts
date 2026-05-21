@@ -83,4 +83,6 @@ export interface MonsterInstance {
   lastActionAt: number;
   /** 리스폰 직후 전투 유예 시각 (nonCombatUntil 이전엔 공격 안 함) */
   nonCombatUntil: number;
+  /** 얼음 스킬 동결 만료 시각 (ms) — 이 시각까지 이동/공격 불가 */
+  frozenUntil?: number;
 }

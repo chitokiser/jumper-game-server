@@ -29,6 +29,7 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_cooldown:     '쿨타임 중입니다.',
     err_out_of_range: '공격 사거리 밖입니다.',
     err_monster_dead: '이미 처치된 몬스터입니다.',
+    monster_frozen:   (n: unknown) => `❄️ 몬스터 ${n}마리 동결!`,
   },
   en: {
     zone_joined:      (z: unknown) => `Joined zone: ${z}`,
@@ -39,6 +40,7 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_cooldown:     'Attack on cooldown.',
     err_out_of_range: 'Out of attack range.',
     err_monster_dead: 'Monster already defeated.',
+    monster_frozen:   (n: unknown) => `❄️ ${n} monster(s) frozen!`,
   },
   vi: {
     zone_joined:      (z: unknown) => `Đã vào khu vực: ${z}`,
@@ -49,6 +51,7 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_cooldown:     'Chiêu thức đang hồi.',
     err_out_of_range: 'Ngoài tầm tấn công.',
     err_monster_dead: 'Quái vật đã bị tiêu diệt rồi.',
+    monster_frozen:   (n: unknown) => `❄️ Đóng băng ${n} quái vật!`,
   },
 };
 

@@ -49,6 +49,8 @@ function randomPatrolPoint(m: MonsterInstance): PatrolWaypoint {
  */
 export function tickMonsterAi(monster: MonsterInstance, deltaMs: number, zoneActive = true): MonsterInstance {
   if (monster.state === 'dead' || monster.state === 'respawning') return monster;
+  // 얼음 동결 중: 이동/어그로 전환 차단 (공격 차단은 combatResolver에서 처리)
+  if (now() < (monster.frozenUntil ?? 0)) return monster;
 
   const m = { ...monster };
   const stepM = (m.moveSpeed * deltaMs) / 1000;
