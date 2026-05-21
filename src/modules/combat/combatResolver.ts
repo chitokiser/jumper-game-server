@@ -23,6 +23,7 @@ import {
 } from '../gateway/clientSyncService.js';
 
 const FREEZE_DURATION_MS = 20_000;
+const PLAYER_ATTACK_RANGE_M = 30;
 import { getSocketId } from '../gateway/socketGateway.js';
 import { haversineM } from '../../lib/geo.js';
 import { getSpawnConfig } from '../admin/spawnConfigLoader.js';
@@ -101,6 +102,13 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
     return;
   }
 
+  // 30m 공격 거리 체크
+  const attackDist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
+  if (attackDist > PLAYER_ATTACK_RANGE_M) {
+    logger.info('combat', `[attack] ${userId.slice(0,8)} → BLOCKED: dist=${attackDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+    return;
+  }
+
   const damage = player.level * 100;
   const { died } = applyDamageToMonster(monsterId, damage);
   recordPlayerAttack(userId);
@@ -136,6 +144,13 @@ export function resolvePlayerSkill(userId: string, skillId: string, monsterId: s
 
   const monster = getAllMonsters().find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
+
+  // 30m 스킬 사거리 체크
+  const skillDist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
+  if (skillDist > PLAYER_ATTACK_RANGE_M) {
+    logger.info('combat', `[skill:${skillId}] ${userId.slice(0,8)} → BLOCKED: dist=${skillDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+    return;
+  }
 
   const multiplier = SKILL_MULTIPLIER[skillId] ?? 1.0;
   const damage = Math.round(player.level * 100 * multiplier);
