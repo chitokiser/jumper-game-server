@@ -13,7 +13,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.tickCombat = tickCombat;
 exports.resolvePlayerAttack = resolvePlayerAttack;
 exports.resolvePlayerSkill = resolvePlayerSkill;
-const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js"); // getMonstersByZone used in tickCombat
+const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js");
 const playerStateStore_js_1 = require("../player/playerStateStore.js");
 const i18n_js_1 = require("../../lib/i18n.js");
 const playerResolver_js_1 = require("../player/playerResolver.js");
@@ -22,6 +22,7 @@ const attackCooldownService_js_1 = require("./attackCooldownService.js");
 const monsterRespawnService_js_1 = require("../monster/monsterRespawnService.js");
 const dropService_js_1 = require("../drop/dropService.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const FREEZE_DURATION_MS = 20000;
 const socketGateway_js_1 = require("../gateway/socketGateway.js");
 const geo_js_1 = require("../../lib/geo.js");
 const spawnConfigLoader_js_1 = require("../admin/spawnConfigLoader.js");
@@ -39,6 +40,8 @@ function tickCombat(zoneId) {
             continue;
         if ((0, time_js_1.now)() < m.nonCombatUntil)
             continue; // 리스폰 유예
+        if ((0, time_js_1.now)() < (m.frozenUntil ?? 0))
+            continue; // 얼음 동결 중
         if (!(0, attackCooldownService_js_1.canMonsterAttack)(m.lastActionAt, m.attackCooldownMs))
             continue;
         const target = (0, playerStateStore_js_1.getPlayer)(m.targetUserId);
@@ -111,8 +114,8 @@ function resolvePlayerAttack(userId, monsterId) {
 }
 /** 스킬 데미지 배율 */
 const SKILL_MULTIPLIER = {
-    lightning: 3.0,
-    fire: 2.5,
+    lightning: 2.0,
+    fire: 2.0,
     ice: 1.5,
 };
 /**
@@ -129,6 +132,13 @@ function resolvePlayerSkill(userId, skillId, monsterId) {
     const multiplier = SKILL_MULTIPLIER[skillId] ?? 1.0;
     const damage = Math.round(player.level * 100 * multiplier);
     const { died } = (0, damageService_js_1.applyDamageToMonster)(monsterId, damage);
+    // 얼음 스킬: 동결 효과 적용 (이동/공격 20초 차단)
+    if (skillId === 'ice' && !died) {
+        const current = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
+        if (current) {
+            (0, monsterInstanceStore_js_1.setMonster)({ ...current, frozenUntil: (0, time_js_1.now)() + FREEZE_DURATION_MS });
+        }
+    }
     logger_js_1.logger.info('combat', `[skill:${skillId}] ${userId.slice(0, 8)} hit ${monster.type} for ${damage} (died=${died})`);
     if (died) {
         const spawn = (0, spawnConfigLoader_js_1.getSpawnConfig)(monster.spawnId);

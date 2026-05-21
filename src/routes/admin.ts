@@ -44,14 +44,14 @@ const router = Router();
 // 어드민이 스폰 배치 시 monsterType에 따라 합리적인 기본값 자동 적용
 
 const MONSTER_TYPE_DEFAULTS: Record<string, Partial<MonsterSpawnPoint>> = {
-  pirate:  { maxHp:  300, attackPower:  30, attackRangeM: 20, aggroRangeM:  40, moveSpeed: 1.5, attackCooldownMs: 1500, respawnSeconds: 90  },
-  pirate2: { maxHp:  500, attackPower:  55, attackRangeM: 20, aggroRangeM:  45, moveSpeed: 1.4, attackCooldownMs: 2000, respawnSeconds: 120 },
-  pirate3: { maxHp:  800, attackPower:  85, attackRangeM: 20, aggroRangeM:  50, moveSpeed: 1.3, attackCooldownMs: 2000, respawnSeconds: 180 },
-  orc:     { maxHp:  600, attackPower:  60, attackRangeM: 20, aggroRangeM:  50, moveSpeed: 1.2, attackCooldownMs: 2000, respawnSeconds: 150 },
-  orc2:    { maxHp: 1000, attackPower:  95, attackRangeM: 20, aggroRangeM:  55, moveSpeed: 1.1, attackCooldownMs: 2200, respawnSeconds: 200 },
-  orc3:    { maxHp: 1500, attackPower: 130, attackRangeM: 20, aggroRangeM:  60, moveSpeed: 1.0, attackCooldownMs: 2500, respawnSeconds: 240 },
-  dragon:  { maxHp: 3000, attackPower: 160, attackRangeM: 20, aggroRangeM: 100, moveSpeed: 0.8, attackCooldownMs: 3000, respawnSeconds: 300 },
-  goblin:  { maxHp:  200, attackPower:  20, attackRangeM: 20, aggroRangeM:  35, moveSpeed: 1.6, attackCooldownMs: 1200, respawnSeconds:  60 },
+  pirate:  { maxHp:  600, attackPower:  60, attackRangeM: 20, aggroRangeM:  40, moveSpeed: 1.5, attackCooldownMs: 1500, respawnSeconds: 90  },
+  pirate2: { maxHp: 1000, attackPower: 110, attackRangeM: 20, aggroRangeM:  45, moveSpeed: 1.4, attackCooldownMs: 2000, respawnSeconds: 120 },
+  pirate3: { maxHp: 1600, attackPower: 170, attackRangeM: 20, aggroRangeM:  50, moveSpeed: 1.3, attackCooldownMs: 2000, respawnSeconds: 180 },
+  orc:     { maxHp: 1200, attackPower: 120, attackRangeM: 20, aggroRangeM:  50, moveSpeed: 1.2, attackCooldownMs: 2000, respawnSeconds: 150 },
+  orc2:    { maxHp: 2000, attackPower: 190, attackRangeM: 20, aggroRangeM:  55, moveSpeed: 1.1, attackCooldownMs: 2200, respawnSeconds: 200 },
+  orc3:    { maxHp: 3000, attackPower: 260, attackRangeM: 20, aggroRangeM:  60, moveSpeed: 1.0, attackCooldownMs: 2500, respawnSeconds: 240 },
+  dragon:  { maxHp: 6000, attackPower: 320, attackRangeM: 20, aggroRangeM: 100, moveSpeed: 0.8, attackCooldownMs: 3000, respawnSeconds: 300 },
+  goblin:  { maxHp:  400, attackPower:  40, attackRangeM: 20, aggroRangeM:  35, moveSpeed: 1.6, attackCooldownMs: 1200, respawnSeconds:  60 },
 };
 
 /** body 우선, 없으면 타입별 기본값, 그래도 없으면 fallback */

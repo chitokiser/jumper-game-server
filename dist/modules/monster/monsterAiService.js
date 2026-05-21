@@ -45,6 +45,9 @@ function randomPatrolPoint(m) {
 function tickMonsterAi(monster, deltaMs, zoneActive = true) {
     if (monster.state === 'dead' || monster.state === 'respawning')
         return monster;
+    // 얼음 동결 중: 이동/어그로 전환 차단 (공격 차단은 combatResolver에서 처리)
+    if ((0, time_js_1.now)() < (monster.frozenUntil ?? 0))
+        return monster;
     const m = { ...monster };
     const stepM = (m.moveSpeed * deltaMs) / 1000;
     switch (m.state) {

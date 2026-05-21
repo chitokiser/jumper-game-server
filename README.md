@@ -63,3 +63,6 @@ npm start       # 프로덕션
 - 공격 판정 / 유저 피격
 - 전투 이벤트 / 드랍 생성
 - WebSocket (merchants.battle.js 연동)
+
+
+보물박스 id와 열쇠id가 앞 3자리만 맞으면 보열리게 해줘

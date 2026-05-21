@@ -27,6 +27,7 @@ const MESSAGES = {
         err_cooldown: '쿨타임 중입니다.',
         err_out_of_range: '공격 사거리 밖입니다.',
         err_monster_dead: '이미 처치된 몬스터입니다.',
+        monster_frozen: (n) => `❄️ 몬스터 ${n}마리 동결!`,
     },
     en: {
         zone_joined: (z) => `Joined zone: ${z}`,
@@ -37,6 +38,7 @@ const MESSAGES = {
         err_cooldown: 'Attack on cooldown.',
         err_out_of_range: 'Out of attack range.',
         err_monster_dead: 'Monster already defeated.',
+        monster_frozen: (n) => `❄️ ${n} monster(s) frozen!`,
     },
     vi: {
         zone_joined: (z) => `Đã vào khu vực: ${z}`,
@@ -47,6 +49,7 @@ const MESSAGES = {
         err_cooldown: 'Chiêu thức đang hồi.',
         err_out_of_range: 'Ngoài tầm tấn công.',
         err_monster_dead: 'Quái vật đã bị tiêu diệt rồi.',
+        monster_frozen: (n) => `❄️ Đóng băng ${n} quái vật!`,
     },
 };
 function t(lang, key, ...args) {

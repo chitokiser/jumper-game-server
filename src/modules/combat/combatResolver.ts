@@ -121,8 +121,8 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
 
 /** 스킬 데미지 배율 */
 const SKILL_MULTIPLIER: Record<string, number> = {
-  lightning: 3.0,
-  fire:      2.5,
+  lightning: 2.0,
+  fire:      2.0,
   ice:       1.5,
 };
 
