@@ -23,6 +23,7 @@ const monsterRespawnService_js_1 = require("../monster/monsterRespawnService.js"
 const dropService_js_1 = require("../drop/dropService.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
 const FREEZE_DURATION_MS = 20000;
+const PLAYER_ATTACK_RANGE_M = 40;
 const socketGateway_js_1 = require("../gateway/socketGateway.js");
 const geo_js_1 = require("../../lib/geo.js");
 const spawnConfigLoader_js_1 = require("../admin/spawnConfigLoader.js");
@@ -95,6 +96,12 @@ function resolvePlayerAttack(userId, monsterId) {
         logger_js_1.logger.info('combat', `[attack] ${userId.slice(0, 8)} → BLOCKED: monster state=${monster.state}`);
         return;
     }
+    // 40m 공격 거리 체크
+    const attackDist = (0, geo_js_1.haversineM)(player.lat, player.lng, monster.currentLat, monster.currentLng);
+    if (attackDist > PLAYER_ATTACK_RANGE_M) {
+        logger_js_1.logger.info('combat', `[attack] ${userId.slice(0, 8)} → BLOCKED: dist=${attackDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+        return;
+    }
     const damage = player.level * 100;
     const { died } = (0, damageService_js_1.applyDamageToMonster)(monsterId, damage);
     (0, attackCooldownService_js_1.recordPlayerAttack)(userId);
@@ -129,6 +136,12 @@ function resolvePlayerSkill(userId, skillId, monsterId) {
     const monster = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
     if (!monster || monster.state === 'dead' || monster.state === 'respawning')
         return;
+    // 40m 스킬 사거리 체크
+    const skillDist = (0, geo_js_1.haversineM)(player.lat, player.lng, monster.currentLat, monster.currentLng);
+    if (skillDist > PLAYER_ATTACK_RANGE_M) {
+        logger_js_1.logger.info('combat', `[skill:${skillId}] ${userId.slice(0, 8)} → BLOCKED: dist=${skillDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+        return;
+    }
     const multiplier = SKILL_MULTIPLIER[skillId] ?? 1.0;
     const damage = Math.round(player.level * 100 * multiplier);
     const { died } = (0, damageService_js_1.applyDamageToMonster)(monsterId, damage);
