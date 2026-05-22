@@ -132,6 +132,7 @@ const SKILL_MULTIPLIER: Record<string, number> = {
   lightning: 2.0,
   fire:      2.0,
   ice:       1.5,
+  wind:      2.5,
 };
 
 /**
