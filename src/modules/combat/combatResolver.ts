@@ -135,6 +135,12 @@ const SKILL_MULTIPLIER: Record<string, number> = {
   fire:      2.0,
   ice:       1.5,
   wind:      2.5,
+  meteor:    3.0,
+};
+
+/** 스킬별 사거리 오버라이드 (기본: PLAYER_ATTACK_RANGE_M=40m) */
+const SKILL_RANGE_OVERRIDE_M: Record<string, number> = {
+  meteor: 60,
 };
 
 /**
@@ -148,10 +154,11 @@ export function resolvePlayerSkill(userId: string, skillId: string, monsterId: s
   const monster = getAllMonsters().find(m => m.monsterId === monsterId);
   if (!monster || monster.state === 'dead' || monster.state === 'respawning') return;
 
-  // 40m 스킬 사거리 체크
+  // 스킬 사거리 체크 (meteor은 60m, 기본 40m)
+  const rangeM = SKILL_RANGE_OVERRIDE_M[skillId] ?? PLAYER_ATTACK_RANGE_M;
   const skillDist = haversineM(player.lat, player.lng, monster.currentLat, monster.currentLng);
-  if (skillDist > PLAYER_ATTACK_RANGE_M) {
-    logger.info('combat', `[skill:${skillId}] ${userId.slice(0,8)} → BLOCKED: dist=${skillDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+  if (skillDist > rangeM) {
+    logger.info('combat', `[skill:${skillId}] ${userId.slice(0,8)} → BLOCKED: dist=${skillDist.toFixed(0)}m > ${rangeM}m`);
     return;
   }
 
