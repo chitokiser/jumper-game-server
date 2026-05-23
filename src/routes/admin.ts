@@ -9,12 +9,15 @@
  * POST /admin/spawns                     — 스폰 포인트 추가 (즉시 인스턴스 생성)
  * DELETE /admin/spawns/:spawnId          — 스폰 제거 + 모든 인스턴스 강제 사망 broadcast
  * POST /admin/monsters/:monsterId/kill   — 특정 인스턴스 강제 사망
+ * GET  /admin/monster-types              — 전체 타입별 스탯 조회
+ * PATCH /admin/monster-types/:type       — 타입 스탯(maxHp, attackPower) 수정 + 즉시 반영
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ENV } from '../config/env.js';
 import { logger } from '../lib/logger.js';
+import { getFirestore } from '../lib/firebaseAdmin.js';
 import {
   getAllSpawnConfigs,
   getSpawnConfig,
@@ -27,6 +30,7 @@ import {
   getMonster,
   getMonstersBySpawn,
   removeMonstersBySpawn,
+  setMonster,
 } from '../modules/monster/monsterInstanceStore.js';
 
 import { fillSpawnPoint } from '../modules/monster/monsterSpawnService.js';
@@ -41,8 +45,11 @@ import { MonsterSpawnPoint } from '../types/monster.js';
 const router = Router();
 
 // ── 타입별 기본 스탯 ───────────────────────────────────────────────────────────
-// 어드민이 스폰 배치 시 monsterType에 따라 합리적인 기본값 자동 적용
+// 런타임에 PATCH /admin/monster-types/:type 으로 변경 가능 + Firestore 영속
 
+const FS_TYPE_CONFIG = 'gs_monster_type_configs';
+
+// 초기값 (서버 시작 시 Firestore 값으로 덮어씌워짐)
 const MONSTER_TYPE_DEFAULTS: Record<string, Partial<MonsterSpawnPoint>> = {
   pirate:  { maxHp:  600, attackPower:  60, attackRangeM: 20, aggroRangeM:  40, moveSpeed: 1.5, attackCooldownMs: 1500, respawnSeconds: 90  },
   pirate2: { maxHp: 1000, attackPower: 110, attackRangeM: 20, aggroRangeM:  45, moveSpeed: 1.4, attackCooldownMs: 2000, respawnSeconds: 120 },
@@ -53,6 +60,25 @@ const MONSTER_TYPE_DEFAULTS: Record<string, Partial<MonsterSpawnPoint>> = {
   dragon:  { maxHp: 6000, attackPower: 320, attackRangeM: 20, aggroRangeM: 100, moveSpeed: 0.8, attackCooldownMs: 3000, respawnSeconds: 300 },
   goblin:  { maxHp:  400, attackPower:  40, attackRangeM: 20, aggroRangeM:  35, moveSpeed: 1.6, attackCooldownMs: 1200, respawnSeconds:  60 },
 };
+
+/** 서버 시작 시 Firestore에서 저장된 스탯 오버라이드를 복원 */
+export async function loadMonsterTypeConfigs(): Promise<void> {
+  const db = getFirestore();
+  if (!db) return;
+  try {
+    const snap = await db.collection(FS_TYPE_CONFIG).get();
+    for (const docSnap of snap.docs) {
+      const type = docSnap.id;
+      if (!MONSTER_TYPE_DEFAULTS[type]) continue;
+      const data = docSnap.data();
+      if (data.maxHp != null)      MONSTER_TYPE_DEFAULTS[type].maxHp      = Number(data.maxHp);
+      if (data.attackPower != null) MONSTER_TYPE_DEFAULTS[type].attackPower = Number(data.attackPower);
+    }
+    logger.info('adminRoute', `[monster-types] Firestore에서 ${snap.size}개 타입 스탯 복원`);
+  } catch (err: any) {
+    logger.warn('adminRoute', `[monster-types] Firestore 복원 실패: ${err.message}`);
+  }
+}
 
 /** body 우선, 없으면 타입별 기본값, 그래도 없으면 fallback */
 function resolveSpawnStat<K extends keyof MonsterSpawnPoint>(
@@ -213,6 +239,81 @@ router.post('/admin/monsters/:monsterId/kill', adminAuth, (req: Request, res: Re
 
   logger.info('adminRoute', `[admin] kill ${monsterId} (${monster.type}), respawnIn=${respawnSecs}s`);
   res.json({ monsterId, killed: true, respawnSeconds: respawnSecs });
+});
+
+// ── GET /admin/monster-types ──────────────────────────────────────────────────
+// 전체 타입별 현재 스탯 반환
+
+router.get('/admin/monster-types', adminAuth, (_req: Request, res: Response) => {
+  const result = Object.entries(MONSTER_TYPE_DEFAULTS).map(([type, stats]) => ({
+    type,
+    maxHp:            stats.maxHp            ?? 0,
+    attackPower:      stats.attackPower      ?? 0,
+    attackCooldownMs: stats.attackCooldownMs ?? 2000,
+    aggroRangeM:      stats.aggroRangeM      ?? 50,
+    moveSpeed:        stats.moveSpeed        ?? 1.0,
+    respawnSeconds:   stats.respawnSeconds   ?? 120,
+  }));
+  res.json({ types: result });
+});
+
+// ── PATCH /admin/monster-types/:type ─────────────────────────────────────────
+// maxHp / attackPower 변경 → 메모리 반영 + 살아있는 인스턴스 즉시 업데이트 + Firestore 저장
+
+router.patch('/admin/monster-types/:type', adminAuth, async (req: Request, res: Response) => {
+  const { type } = req.params;
+  if (!MONSTER_TYPE_DEFAULTS[type]) {
+    res.status(404).json({ error: `unknown monster type: ${type}` });
+    return;
+  }
+
+  const { maxHp, attackPower } = req.body as { maxHp?: unknown; attackPower?: unknown };
+  const updates: Partial<MonsterSpawnPoint> = {};
+
+  if (maxHp != null) {
+    const v = Number(maxHp);
+    if (!isFinite(v) || v < 1) { res.status(400).json({ error: 'maxHp must be a positive number' }); return; }
+    updates.maxHp = Math.round(v);
+  }
+  if (attackPower != null) {
+    const v = Number(attackPower);
+    if (!isFinite(v) || v < 0) { res.status(400).json({ error: 'attackPower must be >= 0' }); return; }
+    updates.attackPower = Math.round(v);
+  }
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: 'maxHp 또는 attackPower 중 하나 이상 필요' });
+    return;
+  }
+
+  // 1. 메모리 기본값 갱신
+  Object.assign(MONSTER_TYPE_DEFAULTS[type], updates);
+
+  // 2. 살아있는 인스턴스 즉시 반영 + broadcast
+  const monsters = getAllMonsters().filter(m => m.type === type);
+  let updated = 0;
+  for (const m of monsters) {
+    const changed = { ...m };
+    if (updates.maxHp != null) {
+      changed.maxHp = updates.maxHp;
+      if (changed.hp > updates.maxHp) changed.hp = updates.maxHp; // HP 초과 시 클램프
+    }
+    if (updates.attackPower != null) changed.attackPower = updates.attackPower;
+    setMonster(changed);
+    broadcastMonsterUpdate(changed.zoneId, changed);
+    updated++;
+  }
+
+  // 3. Firestore 영속
+  const db = getFirestore();
+  if (db) {
+    db.collection(FS_TYPE_CONFIG).doc(type).set(
+      { ...updates, updatedAt: new Date().toISOString() },
+      { merge: true },
+    ).catch((err: any) => logger.warn('adminRoute', `Firestore monster-type save failed: ${err.message}`));
+  }
+
+  logger.info('adminRoute', `[admin] PATCH /admin/monster-types/${type} → ${JSON.stringify(updates)} (${updated} instances updated)`);
+  res.json({ type, updated: updates, instancesUpdated: updated });
 });
 
 export default router;

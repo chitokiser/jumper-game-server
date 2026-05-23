@@ -22,6 +22,7 @@ import { initFirebaseAdmin } from './lib/firebaseAdmin.js';
 
 // ── 월드 데이터 로드 ──────────────────────────────────────────────────────────
 import { loadSpawnConfig, getLoadedZoneConfigs, getAllSpawnConfigs, loadAdminSpawnsFromFirestore } from './modules/admin/spawnConfigLoader.js';
+import { loadMonsterTypeConfigs } from './routes/admin.js';
 import { registerZone } from './modules/zone/zoneRegistry.js';
 import { initAllSpawns } from './modules/monster/monsterSpawnService.js';
 import { getDefaultWorldData } from './config/defaultWorldData.js';
@@ -51,6 +52,8 @@ async function bootstrap(): Promise<void> {
 
   // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
   await loadAdminSpawnsFromFirestore();
+  // 2-2. Firestore에서 몬스터 타입 스탯 오버라이드 복원
+  await loadMonsterTypeConfigs();
 
   // 3. HTTP + Socket.io 서버 생성
   const httpServer = createServer(app);
