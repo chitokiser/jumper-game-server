@@ -54,6 +54,8 @@ function awardExpOnKill(userId, monsterMaxHp) {
     persistExpToFirestore(userId, currentLevel, newExp).catch(e => logger_js_1.logger.warn('expService', `Firestore EXP 저장 실패: ${e}`));
 }
 async function persistExpToFirestore(userId, level, exp) {
+    if (userId === 'anonymous')
+        return;
     const db = (0, firebaseAdmin_js_1.getFirestore)();
     if (!db)
         return;
@@ -61,6 +63,8 @@ async function persistExpToFirestore(userId, level, exp) {
 }
 /** 접속 시 Firestore에서 EXP/레벨 복원 */
 async function loadExpFromFirestore(userId) {
+    if (userId === 'anonymous')
+        return { exp: 0, level: 1 };
     const db = (0, firebaseAdmin_js_1.getFirestore)();
     if (!db)
         return { exp: 0, level: 1 };

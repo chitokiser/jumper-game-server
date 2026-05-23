@@ -59,6 +59,7 @@ export function awardExpOnKill(userId: string, monsterMaxHp: number): void {
 }
 
 async function persistExpToFirestore(userId: string, level: number, exp: number): Promise<void> {
+  if (userId === 'anonymous') return;
   const db = getFirestore();
   if (!db) return;
   await db.collection('battle_players').doc(userId).set(
@@ -69,6 +70,7 @@ async function persistExpToFirestore(userId: string, level: number, exp: number)
 
 /** 접속 시 Firestore에서 EXP/레벨 복원 */
 export async function loadExpFromFirestore(userId: string): Promise<{ exp: number; level: number }> {
+  if (userId === 'anonymous') return { exp: 0, level: 1 };
   const db = getFirestore();
   if (!db) return { exp: 0, level: 1 };
   try {
