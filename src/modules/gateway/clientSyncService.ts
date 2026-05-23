@@ -74,3 +74,13 @@ export function sendDropCollected(socketId: string, dropId: string, gold: number
 export function sendNotify(socketId: string, msg: string): void {
   emitToSocket(socketId, S2C.NOTIFY, { msg });
 }
+
+/** EXP 업데이트 (획득자에게만) */
+export function sendPlayerExpUpdate(socketId: string, level: number, exp: number, nextLevelExp: number): void {
+  emitToSocket(socketId, S2C.PLAYER_EXP, { level, exp, nextLevelExp });
+}
+
+/** 레벨업 알림 (획득자에게만) */
+export function sendPlayerLevelUp(socketId: string, newLevel: number, exp: number, nextLevelExp: number): void {
+  emitToSocket(socketId, S2C.PLAYER_LEVEL_UP, { newLevel, exp, nextLevelExp });
+}

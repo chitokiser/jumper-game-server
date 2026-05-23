@@ -18,6 +18,8 @@ exports.broadcastDropSpawned = broadcastDropSpawned;
 exports.broadcastDropRemoved = broadcastDropRemoved;
 exports.sendDropCollected = sendDropCollected;
 exports.sendNotify = sendNotify;
+exports.sendPlayerExpUpdate = sendPlayerExpUpdate;
+exports.sendPlayerLevelUp = sendPlayerLevelUp;
 const socketGateway_js_1 = require("./socketGateway.js");
 const eventNames_js_1 = require("./eventNames.js");
 const dropStore_js_1 = require("../drop/dropStore.js");
@@ -72,4 +74,12 @@ function sendDropCollected(socketId, dropId, gold) {
 /** 현지화 알림 메시지 (ko/en/vi) */
 function sendNotify(socketId, msg) {
     (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.NOTIFY, { msg });
+}
+/** EXP 업데이트 (획득자에게만) */
+function sendPlayerExpUpdate(socketId, level, exp, nextLevelExp) {
+    (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.PLAYER_EXP, { level, exp, nextLevelExp });
+}
+/** 레벨업 알림 (획득자에게만) */
+function sendPlayerLevelUp(socketId, newLevel, exp, nextLevelExp) {
+    (0, socketGateway_js_1.emitToSocket)(socketId, eventNames_js_1.S2C.PLAYER_LEVEL_UP, { newLevel, exp, nextLevelExp });
 }

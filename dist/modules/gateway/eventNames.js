@@ -51,4 +51,8 @@ exports.S2C = {
     ERROR: 'error',
     /** 현지화 알림 메시지 (ko/en/vi): { msg: string } */
     NOTIFY: 'notify',
+    /** EXP 업데이트 (획득자에게만): { level, exp, nextLevelExp } */
+    PLAYER_EXP: 'player:exp',
+    /** 레벨업 (획득자에게만): { newLevel, exp, nextLevelExp } */
+    PLAYER_LEVEL_UP: 'player:levelup',
 };

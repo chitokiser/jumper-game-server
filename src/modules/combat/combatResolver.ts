@@ -21,6 +21,7 @@ import {
   sendPlayerHit, sendPlayerDied, sendNotify,
   broadcastMonsterDied, broadcastMonsterUpdate,
 } from '../gateway/clientSyncService.js';
+import { awardExpOnKill } from '../exp/expService.js';
 
 const FREEZE_DURATION_MS = 20_000;
 const PLAYER_ATTACK_RANGE_M = 40;
@@ -121,6 +122,7 @@ export function resolvePlayerAttack(userId: string, monsterId: string): void {
     const dead = markAsDead(monster, respawnSeconds);
     broadcastMonsterDied(dead.zoneId, dead.monsterId);
     generateDrop(dead);
+    awardExpOnKill(userId, monster.maxHp);
   } else {
     const updated = getAllMonsters().find(m => m.monsterId === monsterId);
     if (updated) broadcastMonsterUpdate(updated.zoneId, updated);
@@ -173,6 +175,7 @@ export function resolvePlayerSkill(userId: string, skillId: string, monsterId: s
     const dead = markAsDead(monster, respawnSeconds);
     broadcastMonsterDied(dead.zoneId, dead.monsterId);
     generateDrop(dead);
+    awardExpOnKill(userId, monster.maxHp);
   } else {
     const updated = getAllMonsters().find(m => m.monsterId === monsterId);
     if (updated) broadcastMonsterUpdate(updated.zoneId, updated);

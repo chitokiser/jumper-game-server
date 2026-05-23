@@ -21,15 +21,20 @@ import { isTeleport } from './playerResolver.js';
 import { HP_PER_LEVEL, MP_PER_LEVEL, PLAYER_TIMEOUT_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 import { now } from '../../lib/time.js';
+import { loadExpFromFirestore } from '../exp/expService.js';
 
 /** 플레이어 입장 */
-export function joinZone(socketId: string, data: {
+export async function joinZone(socketId: string, data: {
   userId: string; zoneId: string;
   lat: number; lng: number; accuracy: number; level: number;
   lang?: string;
-}): void {
+}): Promise<void> {
   const { userId, lat, lng, accuracy, level } = data;
   const lang = parseLang(data.lang);
+
+  // Firestore에서 저장된 EXP/레벨 복원
+  const { exp: savedExp, level: savedGsLevel } = await loadExpFromFirestore(userId);
+  const effectiveLevel = Math.max(level, savedGsLevel);
 
   // zone 유효성 검사: 존재 여부 + 좌표 범위 → 필요 시 가장 가까운 존으로 재배정
   const zoneId = resolveZoneId(data.zoneId, lat, lng) ?? data.zoneId;
@@ -40,8 +45,8 @@ export function joinZone(socketId: string, data: {
     playerLeaveZone(userId, existing.zoneId);
   }
 
-  const maxHp = level * HP_PER_LEVEL;
-  const maxMp = level * MP_PER_LEVEL;
+  const maxHp = effectiveLevel * HP_PER_LEVEL;
+  const maxMp = effectiveLevel * MP_PER_LEVEL;
   const state: PlayerState = {
     userId, zoneId, lat, lng, accuracy,
     // 재접속 시 사망 상태였다면 HP 절반으로 자동 부활 (공격 불가 방지)
@@ -49,7 +54,8 @@ export function joinZone(socketId: string, data: {
     maxHp,
     mp: existing?.mp ?? maxMp,
     maxMp,
-    level,
+    level: effectiveLevel,
+    exp: savedExp,
     state: 'alive',
     lastSeenAt: now(),
     lastMoveAt: now(),

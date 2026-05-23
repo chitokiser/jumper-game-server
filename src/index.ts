@@ -59,7 +59,7 @@ async function bootstrap(): Promise<void> {
   const httpServer = createServer(app);
 
   initSocketGateway(httpServer, {
-    onJoin:     (socketId, data) => joinZone(socketId, data),
+    onJoin:     (socketId, data) => { joinZone(socketId, data).catch(e => logger.error('socket', 'joinZone error', e)); },
     onLocation: (socketId, data) => updateLocation(socketId, data),
     onLeave:    (socketId)       => leaveZone(socketId),
     onAttack:   (socketId, data) => {

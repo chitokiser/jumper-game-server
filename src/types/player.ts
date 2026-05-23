@@ -28,6 +28,8 @@ export interface PlayerState {
   mp: number;
   maxMp: number;
   level: number;
+  /** 게임서버 누적 EXP (온체인 EXP와 독립) */
+  exp: number;
 
   state: PlayerStateEnum;
 

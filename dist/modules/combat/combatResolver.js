@@ -22,6 +22,7 @@ const attackCooldownService_js_1 = require("./attackCooldownService.js");
 const monsterRespawnService_js_1 = require("../monster/monsterRespawnService.js");
 const dropService_js_1 = require("../drop/dropService.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const expService_js_1 = require("../exp/expService.js");
 const FREEZE_DURATION_MS = 20000;
 const PLAYER_ATTACK_RANGE_M = 40;
 const socketGateway_js_1 = require("../gateway/socketGateway.js");
@@ -112,6 +113,7 @@ function resolvePlayerAttack(userId, monsterId) {
         const dead = (0, monsterRespawnService_js_1.markAsDead)(monster, respawnSeconds);
         (0, clientSyncService_js_1.broadcastMonsterDied)(dead.zoneId, dead.monsterId);
         (0, dropService_js_1.generateDrop)(dead);
+        (0, expService_js_1.awardExpOnKill)(userId, monster.maxHp);
     }
     else {
         const updated = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
@@ -124,6 +126,7 @@ const SKILL_MULTIPLIER = {
     lightning: 2.0,
     fire: 2.0,
     ice: 1.5,
+    wind: 2.5,
 };
 /**
  * 플레이어 스킬 → 몬스터 (C2S.PLAYER_SKILL 수신 시 호출)
@@ -159,6 +162,7 @@ function resolvePlayerSkill(userId, skillId, monsterId) {
         const dead = (0, monsterRespawnService_js_1.markAsDead)(monster, respawnSeconds);
         (0, clientSyncService_js_1.broadcastMonsterDied)(dead.zoneId, dead.monsterId);
         (0, dropService_js_1.generateDrop)(dead);
+        (0, expService_js_1.awardExpOnKill)(userId, monster.maxHp);
     }
     else {
         const updated = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);

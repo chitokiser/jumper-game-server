@@ -28,6 +28,8 @@ const MESSAGES = {
         err_out_of_range: '공격 사거리 밖입니다.',
         err_monster_dead: '이미 처치된 몬스터입니다.',
         monster_frozen: (n) => `❄️ 몬스터 ${n}마리 동결!`,
+        exp_gained: (e) => `EXP +${e}!`,
+        level_up: (lv) => `🎉 레벨업! Lv.${lv}`,
     },
     en: {
         zone_joined: (z) => `Joined zone: ${z}`,
@@ -39,6 +41,8 @@ const MESSAGES = {
         err_out_of_range: 'Out of attack range.',
         err_monster_dead: 'Monster already defeated.',
         monster_frozen: (n) => `❄️ ${n} monster(s) frozen!`,
+        exp_gained: (e) => `EXP +${e}!`,
+        level_up: (lv) => `🎉 Level Up! Lv.${lv}`,
     },
     vi: {
         zone_joined: (z) => `Đã vào khu vực: ${z}`,
@@ -50,6 +54,8 @@ const MESSAGES = {
         err_out_of_range: 'Ngoài tầm tấn công.',
         err_monster_dead: 'Quái vật đã bị tiêu diệt rồi.',
         monster_frozen: (n) => `❄️ Đóng băng ${n} quái vật!`,
+        exp_gained: (e) => `EXP +${e}!`,
+        level_up: (lv) => `🎉 Lên cấp! Lv.${lv}`,
     },
 };
 function t(lang, key, ...args) {

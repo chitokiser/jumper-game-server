@@ -22,10 +22,14 @@ const playerResolver_js_1 = require("./playerResolver.js");
 const constants_js_1 = require("../../config/constants.js");
 const logger_js_1 = require("../../lib/logger.js");
 const time_js_1 = require("../../lib/time.js");
+const expService_js_1 = require("../exp/expService.js");
 /** 플레이어 입장 */
-function joinZone(socketId, data) {
+async function joinZone(socketId, data) {
     const { userId, lat, lng, accuracy, level } = data;
     const lang = (0, i18n_js_1.parseLang)(data.lang);
+    // Firestore에서 저장된 EXP/레벨 복원
+    const { exp: savedExp, level: savedGsLevel } = await (0, expService_js_1.loadExpFromFirestore)(userId);
+    const effectiveLevel = Math.max(level, savedGsLevel);
     // zone 유효성 검사: 존재 여부 + 좌표 범위 → 필요 시 가장 가까운 존으로 재배정
     const zoneId = (0, zoneManager_js_1.resolveZoneId)(data.zoneId, lat, lng) ?? data.zoneId;
     // 이미 다른 존에 있으면 퇴장 처리
@@ -33,8 +37,8 @@ function joinZone(socketId, data) {
     if (existing && existing.zoneId !== zoneId) {
         (0, zoneManager_js_1.playerLeaveZone)(userId, existing.zoneId);
     }
-    const maxHp = level * constants_js_1.HP_PER_LEVEL;
-    const maxMp = level * constants_js_1.MP_PER_LEVEL;
+    const maxHp = effectiveLevel * constants_js_1.HP_PER_LEVEL;
+    const maxMp = effectiveLevel * constants_js_1.MP_PER_LEVEL;
     const state = {
         userId, zoneId, lat, lng, accuracy,
         // 재접속 시 사망 상태였다면 HP 절반으로 자동 부활 (공격 불가 방지)
@@ -42,7 +46,8 @@ function joinZone(socketId, data) {
         maxHp,
         mp: existing?.mp ?? maxMp,
         maxMp,
-        level,
+        level: effectiveLevel,
+        exp: savedExp,
         state: 'alive',
         lastSeenAt: (0, time_js_1.now)(),
         lastMoveAt: (0, time_js_1.now)(),

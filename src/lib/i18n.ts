@@ -30,6 +30,8 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_out_of_range: '공격 사거리 밖입니다.',
     err_monster_dead: '이미 처치된 몬스터입니다.',
     monster_frozen:   (n: unknown) => `❄️ 몬스터 ${n}마리 동결!`,
+    exp_gained:       (e: unknown) => `EXP +${e}!`,
+    level_up:         (lv: unknown) => `🎉 레벨업! Lv.${lv}`,
   },
   en: {
     zone_joined:      (z: unknown) => `Joined zone: ${z}`,
@@ -41,6 +43,8 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_out_of_range: 'Out of attack range.',
     err_monster_dead: 'Monster already defeated.',
     monster_frozen:   (n: unknown) => `❄️ ${n} monster(s) frozen!`,
+    exp_gained:       (e: unknown) => `EXP +${e}!`,
+    level_up:         (lv: unknown) => `🎉 Level Up! Lv.${lv}`,
   },
   vi: {
     zone_joined:      (z: unknown) => `Đã vào khu vực: ${z}`,
@@ -52,6 +56,8 @@ const MESSAGES: Record<Lang, Record<string, Msg>> = {
     err_out_of_range: 'Ngoài tầm tấn công.',
     err_monster_dead: 'Quái vật đã bị tiêu diệt rồi.',
     monster_frozen:   (n: unknown) => `❄️ Đóng băng ${n} quái vật!`,
+    exp_gained:       (e: unknown) => `EXP +${e}!`,
+    level_up:         (lv: unknown) => `🎉 Lên cấp! Lv.${lv}`,
   },
 };
 

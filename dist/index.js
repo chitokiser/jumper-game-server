@@ -25,6 +25,7 @@ const logger_js_1 = require("./lib/logger.js");
 const firebaseAdmin_js_1 = require("./lib/firebaseAdmin.js");
 // ── 월드 데이터 로드 ──────────────────────────────────────────────────────────
 const spawnConfigLoader_js_1 = require("./modules/admin/spawnConfigLoader.js");
+const admin_js_1 = require("./routes/admin.js");
 const zoneRegistry_js_1 = require("./modules/zone/zoneRegistry.js");
 const monsterSpawnService_js_1 = require("./modules/monster/monsterSpawnService.js");
 const defaultWorldData_js_1 = require("./config/defaultWorldData.js");
@@ -47,10 +48,12 @@ async function bootstrap() {
     logger_js_1.logger.info('bootstrap', `loaded ${(0, spawnConfigLoader_js_1.getLoadedZoneConfigs)().length} zones`);
     // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
     await (0, spawnConfigLoader_js_1.loadAdminSpawnsFromFirestore)();
+    // 2-2. Firestore에서 몬스터 타입 스탯 오버라이드 복원
+    await (0, admin_js_1.loadMonsterTypeConfigs)();
     // 3. HTTP + Socket.io 서버 생성
     const httpServer = (0, http_1.createServer)(app_js_1.default);
     (0, socketGateway_js_1.initSocketGateway)(httpServer, {
-        onJoin: (socketId, data) => (0, playerSessionManager_js_1.joinZone)(socketId, data),
+        onJoin: (socketId, data) => { (0, playerSessionManager_js_1.joinZone)(socketId, data).catch(e => logger_js_1.logger.error('socket', 'joinZone error', e)); },
         onLocation: (socketId, data) => (0, playerSessionManager_js_1.updateLocation)(socketId, data),
         onLeave: (socketId) => (0, playerSessionManager_js_1.leaveZone)(socketId),
         onAttack: (socketId, data) => {
