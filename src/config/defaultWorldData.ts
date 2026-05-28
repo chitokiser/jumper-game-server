@@ -53,38 +53,6 @@ export function getDefaultWorldData(): {
     spawns: [
       // ── oceanpark-a ─────────────────────────────────────────────────────────
       {
-        spawnId:          'spawn-opa-001',
-        zoneId:           'oceanpark-a',
-        monsterType:      'goblin',
-        lat:              20.9716,
-        lng:              105.9366,
-        respawnSeconds:   300,   // 5분
-        maxCount:         3,
-        active:           true,
-        aggroRangeM:      50,
-        attackRangeM:     20,
-        moveSpeed:        1.2,   // m/s
-        attackPower:      80,
-        attackCooldownMs: 2000,
-        maxHp:            500,
-      },
-      {
-        spawnId:          'spawn-opa-002',
-        zoneId:           'oceanpark-a',
-        monsterType:      'goblin',
-        lat:              20.9724,
-        lng:              105.9375,
-        respawnSeconds:   300,
-        maxCount:         2,
-        active:           true,
-        aggroRangeM:      50,
-        attackRangeM:     20,
-        moveSpeed:        1.2,
-        attackPower:      80,
-        attackCooldownMs: 2000,
-        maxHp:            500,
-      },
-      {
         spawnId:          'spawn-opa-003',
         zoneId:           'oceanpark-a',
         monsterType:      'orc',
