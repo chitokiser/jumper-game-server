@@ -53,5 +53,7 @@ export const S2C = {
   /** EXP 업데이트 (획득자에게만): { level, exp, nextLevelExp } */
   PLAYER_EXP:        'player:exp',
   /** 레벨업 (획득자에게만): { newLevel, exp, nextLevelExp } */
-  PLAYER_LEVEL_UP:   'player:levelup',
+  PLAYER_LEVEL_UP:      'player:levelup',
+  /** 몬스터 배치 상태 변경 (존 내 다수 변경 MonsterInstance[]) */
+  MONSTER_BATCH_UPDATE: 'monster:batch_update',
 } as const;

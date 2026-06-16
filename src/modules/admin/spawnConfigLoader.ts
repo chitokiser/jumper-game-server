@@ -40,6 +40,11 @@ export function getLoadedZoneConfigs(): ZoneConfig[] {
   return zoneConfigs;
 }
 
+/** 런타임에 스폰 포인트 등록 (Firestore 저장 없음 — 재시작 시 재생성하는 동적 스폰용) */
+export function registerSpawnConfig(spawn: MonsterSpawnPoint): void {
+  spawnMap.set(spawn.spawnId, spawn);
+}
+
 /** 런타임에 스폰 포인트 추가 (관리자 배치) + Firestore 영구 저장 */
 export function addSpawnConfig(spawn: MonsterSpawnPoint): void {
   spawnMap.set(spawn.spawnId, spawn);

@@ -26,6 +26,7 @@ import { loadMonsterTypeConfigs } from './routes/admin.js';
 import { registerZone } from './modules/zone/zoneRegistry.js';
 import { initAllSpawns } from './modules/monster/monsterSpawnService.js';
 import { getDefaultWorldData } from './config/defaultWorldData.js';
+import { loadPotionShopSpawns } from './modules/monster/potionShopSpawnLoader.js';
 
 // ── Socket.io 게이트웨이 ───────────────────────────────────────────────────────
 import {
@@ -52,7 +53,9 @@ async function bootstrap(): Promise<void> {
 
   // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
   await loadAdminSpawnsFromFirestore();
-  // 2-2. Firestore에서 몬스터 타입 스탯 오버라이드 복원
+  // 2-2. 약물상점 기반 몬스터 스폰 동적 생성 (모든 potion/shop_potion 상점 대상)
+  await loadPotionShopSpawns();
+  // 2-3. Firestore에서 몬스터 타입 스탯 오버라이드 복원
   await loadMonsterTypeConfigs();
 
   // 3. HTTP + Socket.io 서버 생성

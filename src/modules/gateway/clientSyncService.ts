@@ -25,9 +25,14 @@ export function sendZoneSnapshot(socketId: string, zoneId: string, monsters: Mon
   });
 }
 
-/** 몬스터 상태 변경 브로드캐스트 */
+/** 몬스터 상태 변경 브로드캐스트 (단건 — 전투 피격·리스폰 전용) */
 export function broadcastMonsterUpdate(zoneId: string, monster: MonsterInstance): void {
   emitToZone(zoneId, S2C.MONSTER_UPDATE, monster);
+}
+
+/** 몬스터 배치 상태 변경 브로드캐스트 (tick 루프 전용 — 개별 emit 대신 1회 전송) */
+export function broadcastMonsterBatch(zoneId: string, monsters: MonsterInstance[]): void {
+  emitToZone(zoneId, S2C.MONSTER_BATCH_UPDATE, monsters);
 }
 
 /** 몬스터 사망 브로드캐스트 */
