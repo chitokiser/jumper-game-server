@@ -5,15 +5,15 @@
  * 서버 시작 시 Firestore game_shops에서 모든 약물상점을 읽어
  * 각 상점 중심 ~600-900m 반경에 5종 × 50마리(5스폰 × maxCount:10) 자동 배치
  *
+ * - 새 존(zone) 생성 없음 — 상점 좌표에서 가장 가까운 기존 존에 스폰 추가
+ *   (새 존을 만들면 클라이언트가 그 존을 알 수 없어 플레이어가 배정되지 않음)
  * - 스폰 ID 형식: ps-{shopId}-{monsterType}-{1~5}
- * - 존 ID 형식: potionshop-{shopId}
  * - Firestore 저장 없음 — 재시작 시 game_shops에서 재생성
  */
 
 import { getFirestore } from '../../lib/firebaseAdmin.js';
 import { MonsterSpawnPoint } from '../../types/monster.js';
-import { ZoneConfig } from '../../types/zone.js';
-import { registerZone } from '../zone/zoneRegistry.js';
+import { findNearestZone } from '../zone/zoneManager.js';
 import { registerSpawnConfig } from '../admin/spawnConfigLoader.js';
 import { logger } from '../../lib/logger.js';
 
@@ -40,20 +40,20 @@ const OFFSETS_737: { dlat: number; dlng: number }[] = [
 
 /** ~800m 반경 5점 (orc2) */
 const OFFSETS_800: { dlat: number; dlng: number }[] = [
-  { dlat:  0.0070, dlng:  0.0020 }, // N~806m
-  { dlat: -0.0070, dlng: -0.0020 }, // S~806m
-  { dlat:  0.0020, dlng:  0.0070 }, // NE~760m
-  { dlat: -0.0020, dlng: -0.0070 }, // SW~760m
-  { dlat:  0.0050, dlng: -0.0060 }, // NW~835m
+  { dlat:  0.0070, dlng:  0.0020 }, // N
+  { dlat: -0.0070, dlng: -0.0020 }, // S
+  { dlat:  0.0020, dlng:  0.0070 }, // NE
+  { dlat: -0.0020, dlng: -0.0070 }, // SW
+  { dlat:  0.0050, dlng: -0.0060 }, // NW
 ];
 
 /** ~900m 반경 5점 (orc3) */
 const OFFSETS_900: { dlat: number; dlng: number }[] = [
-  { dlat:  0.0080, dlng:  0.0020 }, // N~914m
-  { dlat: -0.0080, dlng: -0.0020 }, // S~914m
-  { dlat:  0.0050, dlng:  0.0070 }, // NE~916m
-  { dlat: -0.0050, dlng: -0.0070 }, // SW~916m
-  { dlat:  0.0000, dlng: -0.0085 }, // W~883m
+  { dlat:  0.0080, dlng:  0.0020 }, // N
+  { dlat: -0.0080, dlng: -0.0020 }, // S
+  { dlat:  0.0050, dlng:  0.0070 }, // NE
+  { dlat: -0.0050, dlng: -0.0070 }, // SW
+  { dlat:  0.0000, dlng: -0.0085 }, // W
 ];
 
 interface SpawnTemplate {
@@ -103,8 +103,9 @@ const TEMPLATES: SpawnTemplate[] = [
 
 /**
  * Firestore game_shops에서 모든 약물상점을 읽어
- * 각 상점마다 존 + 25 스폰포인트를 등록한다.
+ * 각 상점마다 가장 가까운 기존 존에 25 스폰포인트를 등록한다.
  *
+ * 반드시 loadSpawnConfig() + registerZone() 이후,
  * initAllSpawns() 호출 전에 실행해야 함.
  * Firestore 미설정 시 조용히 스킵.
  */
@@ -143,18 +144,13 @@ export async function loadPotionShopSpawns(): Promise<void> {
       continue;
     }
 
-    // 존 등록 — 상점 중심 1000m 반경
-    const zoneId = `potionshop-${shopId}`;
-    const zone: ZoneConfig = {
-      zoneId,
-      name:       `Potion Shop Zone (${shop.name ?? shopId})`,
-      centerLat:  lat,
-      centerLng:  lng,
-      radiusM:    1000,
-      active:     true,
-      tickRateMs: 1000,
-    };
-    registerZone(zone);
+    // 이 상점 좌표에서 가장 가까운 기존 존 사용 (새 존 생성 안 함)
+    // — 새 존을 만들면 클라이언트 ZONE_CONFIGS에 없어 플레이어가 그 존에 배정되지 않음
+    const zoneId = findNearestZone(lat, lng);
+    if (!zoneId) {
+      logger.warn('potionShopSpawns', `shop ${shopId}: no zone found — skipped`);
+      continue;
+    }
 
     // 25 스폰포인트 등록 (5종 × 5위치)
     for (const tmpl of TEMPLATES) {
@@ -187,6 +183,6 @@ export async function loadPotionShopSpawns(): Promise<void> {
   }
 
   logger.info('potionShopSpawns',
-    `${snap.size} potion shops → ${totalSpawns} spawn points (${snap.size * 250} monsters)`
+    `${snap.size} potion shops → ${totalSpawns} spawn points (${snap.size * 250} monsters max)`
   );
 }
