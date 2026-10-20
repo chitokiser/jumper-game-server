@@ -24,7 +24,10 @@ const dropService_js_1 = require("../drop/dropService.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
 const expService_js_1 = require("../exp/expService.js");
 const FREEZE_DURATION_MS = 20000;
-const PLAYER_ATTACK_RANGE_M = 40;
+// 사거리 규칙 (2026-10-20): 플레이어가 몬스터를 공격할 수 있는 거리 = 그 몬스터의 attackRangeM
+// (몬스터가 플레이어를 공격하는 거리와 같다). 클라이언트 위치 전송 지연(최대 5초 주기)만큼만 여유를 둔다.
+const RANGE_TOLERANCE_M = 5;
+const playerRangeTo = (m) => (m.attackRangeM ?? 20) + RANGE_TOLERANCE_M;
 const socketGateway_js_1 = require("../gateway/socketGateway.js");
 const geo_js_1 = require("../../lib/geo.js");
 const spawnConfigLoader_js_1 = require("../admin/spawnConfigLoader.js");
@@ -97,10 +100,11 @@ function resolvePlayerAttack(userId, monsterId) {
         logger_js_1.logger.info('combat', `[attack] ${userId.slice(0, 8)} → BLOCKED: monster state=${monster.state}`);
         return;
     }
-    // 40m 공격 거리 체크
+    // 공격 거리 체크 — 그 몬스터의 공격 사거리와 같음
     const attackDist = (0, geo_js_1.haversineM)(player.lat, player.lng, monster.currentLat, monster.currentLng);
-    if (attackDist > PLAYER_ATTACK_RANGE_M) {
-        logger_js_1.logger.info('combat', `[attack] ${userId.slice(0, 8)} → BLOCKED: dist=${attackDist.toFixed(0)}m > ${PLAYER_ATTACK_RANGE_M}m`);
+    const rangeLimit = playerRangeTo(monster);
+    if (attackDist > rangeLimit) {
+        logger_js_1.logger.info('combat', `[attack] ${userId.slice(0, 8)} → BLOCKED: dist=${attackDist.toFixed(0)}m > ${rangeLimit}m`);
         return;
     }
     const damage = player.level * 100;
@@ -129,10 +133,6 @@ const SKILL_MULTIPLIER = {
     wind: 2.5,
     meteor: 3.0,
 };
-/** 스킬별 사거리 오버라이드 (기본: PLAYER_ATTACK_RANGE_M=40m) */
-const SKILL_RANGE_OVERRIDE_M = {
-    meteor: 60,
-};
 /**
  * 플레이어 스킬 → 몬스터 (C2S.PLAYER_SKILL 수신 시 호출)
  * 클라이언트가 범위 내 각 몬스터에 대해 개별 호출
@@ -144,8 +144,8 @@ function resolvePlayerSkill(userId, skillId, monsterId) {
     const monster = (0, monsterInstanceStore_js_1.getAllMonsters)().find(m => m.monsterId === monsterId);
     if (!monster || monster.state === 'dead' || monster.state === 'respawning')
         return;
-    // 스킬 사거리 체크 (meteor은 60m, 기본 40m)
-    const rangeM = SKILL_RANGE_OVERRIDE_M[skillId] ?? PLAYER_ATTACK_RANGE_M;
+    // 스킬 사거리 체크 — 일반 공격과 같이 그 몬스터의 공격 사거리
+    const rangeM = playerRangeTo(monster);
     const skillDist = (0, geo_js_1.haversineM)(player.lat, player.lng, monster.currentLat, monster.currentLng);
     if (skillDist > rangeM) {
         logger_js_1.logger.info('combat', `[skill:${skillId}] ${userId.slice(0, 8)} → BLOCKED: dist=${skillDist.toFixed(0)}m > ${rangeM}m`);
