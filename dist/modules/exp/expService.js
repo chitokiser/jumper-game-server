@@ -8,10 +8,44 @@
  * - 온체인 EXP와 완전 독립: Firestore battle_players.{gsExp, gsLevel}
  * - 레벨 상한: 99
  */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.calcNextLevelExp = calcNextLevelExp;
 exports.awardExpOnKill = awardExpOnKill;
 exports.loadExpFromFirestore = loadExpFromFirestore;
+const admin = __importStar(require("firebase-admin"));
 const playerStateStore_js_1 = require("../player/playerStateStore.js");
 const socketGateway_js_1 = require("../gateway/socketGateway.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
@@ -51,15 +85,16 @@ function awardExpOnKill(userId, monsterMaxHp) {
         }
         (0, clientSyncService_js_1.sendPlayerExpUpdate)(socketId, currentLevel, newExp, calcNextLevelExp(currentLevel));
     }
-    persistExpToFirestore(userId, currentLevel, newExp).catch(e => logger_js_1.logger.warn('expService', `Firestore EXP 저장 실패: ${e}`));
+    persistExpToFirestore(userId, currentLevel, newExp - player.exp).catch(e => logger_js_1.logger.warn('expService', `Firestore EXP 저장 실패: ${e}`));
 }
-async function persistExpToFirestore(userId, level, exp) {
-    if (userId === 'anonymous')
+// 경험치는 더하기(increment)로 저장 — 화면(배치 몬스터 처치)도 같은 칸에 더하므로 덮어쓰면 안 된다 (2026-10-20)
+async function persistExpToFirestore(userId, level, expGain) {
+    if (userId === 'anonymous' || expGain <= 0)
         return;
     const db = (0, firebaseAdmin_js_1.getFirestore)();
     if (!db)
         return;
-    await db.collection('battle_players').doc(userId).set({ gsExp: exp, gsLevel: level, updatedAt: new Date() }, { merge: true });
+    await db.collection('battle_players').doc(userId).set({ gsExp: admin.firestore.FieldValue.increment(expGain), gsLevel: level, updatedAt: new Date() }, { merge: true });
 }
 /** 접속 시 Firestore에서 EXP/레벨 복원 */
 async function loadExpFromFirestore(userId) {

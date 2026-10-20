@@ -8,6 +8,8 @@
  * - 레벨 상한: 99
  */
 
+import * as admin from 'firebase-admin';
+
 import { getPlayer, setPlayer, getLangBySocket } from '../player/playerStateStore.js';
 import { getSocketId } from '../gateway/socketGateway.js';
 import { sendNotify, sendPlayerExpUpdate, sendPlayerLevelUp } from '../gateway/clientSyncService.js';
@@ -53,17 +55,18 @@ export function awardExpOnKill(userId: string, monsterMaxHp: number): void {
     sendPlayerExpUpdate(socketId, currentLevel, newExp, calcNextLevelExp(currentLevel));
   }
 
-  persistExpToFirestore(userId, currentLevel, newExp).catch(e =>
+  persistExpToFirestore(userId, currentLevel, newExp - player.exp).catch(e =>
     logger.warn('expService', `Firestore EXP 저장 실패: ${e}`)
   );
 }
 
-async function persistExpToFirestore(userId: string, level: number, exp: number): Promise<void> {
-  if (userId === 'anonymous') return;
+// 경험치는 더하기(increment)로 저장 — 화면(배치 몬스터 처치)도 같은 칸에 더하므로 덮어쓰면 안 된다 (2026-10-20)
+async function persistExpToFirestore(userId: string, level: number, expGain: number): Promise<void> {
+  if (userId === 'anonymous' || expGain <= 0) return;
   const db = getFirestore();
   if (!db) return;
   await db.collection('battle_players').doc(userId).set(
-    { gsExp: exp, gsLevel: level, updatedAt: new Date() },
+    { gsExp: admin.firestore.FieldValue.increment(expGain), gsLevel: level, updatedAt: new Date() },
     { merge: true }
   );
 }
