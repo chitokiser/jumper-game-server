@@ -22,6 +22,7 @@ import { ENV } from '../../config/env.js';
 import { DISCONNECT_GRACE_MS } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
 import { C2S, S2C } from './eventNames.js';
+import { verifyIdToken } from '../../lib/auth.js';
 
 // 순환 참조 방지를 위해 서비스는 주입 방식으로 연결
 export type GatewayHandlers = {
@@ -36,6 +37,8 @@ export type GatewayHandlers = {
 
 export interface JoinPayload {
   userId: string; zoneId: string;
+  /** Firebase 로그인 토큰 — 서버가 검증해 userId를 토큰의 uid로 정한다 (남의 ID 사칭 방지) */
+  idToken?: string;
   lat: number; lng: number; accuracy: number; level: number;
   /** 선호 언어 — 'ko' | 'en' | 'vi' (미제공 시 'en') */
   lang?: string;
@@ -76,7 +79,17 @@ export function initSocketGateway(httpServer: HttpServer, handlers: GatewayHandl
   io.on('connection', (socket: Socket) => {
     logger.info('gateway', `client connected: ${socket.id}`);
 
-    socket.on(C2S.PLAYER_JOIN, (data: JoinPayload) => {
+    socket.on(C2S.PLAYER_JOIN, async (data: JoinPayload) => {
+      // 로그인 토큰 확인 — 클라이언트가 보낸 userId는 믿지 않는다
+      const decoded = await verifyIdToken(data?.idToken);
+      if (!decoded) {
+        socket.emit(S2C.ERROR, { code: 'unauthenticated', message: 'login required' });
+        logger.warn('gateway', `join rejected (no valid token): ${socket.id}`);
+        return;
+      }
+      data = { ...data, userId: decoded.uid };
+      delete data.idToken;
+
       // 재접속 유예 중이던 같은 userId → 타이머 취소, 세션 유지
       const pending = pendingDisconnects.get(data.userId);
       if (pending) {

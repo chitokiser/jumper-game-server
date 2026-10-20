@@ -21,7 +21,9 @@ export function initFirebaseAdmin(): void {
   const privateKey   = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (!projectId || !clientEmail || !privateKey) {
-    logger.warn('firebaseAdmin', 'Firebase 환경변수 미설정 — 스폰 영구저장 비활성화');
+    logger.warn('firebaseAdmin', 'Firebase 환경변수 미설정 — 스폰 영구저장 비활성화 (로그인 토큰 검증만 사용)');
+    // 로그인 토큰 검증은 서비스 계정 없이 프로젝트 ID만으로 가능
+    if (admin.apps.length === 0) admin.initializeApp({ projectId: projectId || 'jumper-b15aa' });
     return;
   }
 

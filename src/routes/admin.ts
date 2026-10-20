@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ENV } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { getFirestore } from '../lib/firebaseAdmin.js';
+import { verifyIdToken, isAdminUser } from '../lib/auth.js';
 import {
   getAllSpawnConfigs,
   getSpawnConfig,
@@ -94,10 +95,18 @@ function resolveSpawnStat<K extends keyof MonsterSpawnPoint>(
 
 // ── 인증 미들웨어 ──────────────────────────────────────────────────────────────
 
-function adminAuth(req: Request, res: Response, next: NextFunction): void {
+// 1) 브라우저 관리자: Authorization: Bearer <Firebase 로그인 토큰> → 관리자 계정인지 확인
+// 2) 서버 스크립트: X-Admin-Key == 환경변수 ADMIN_SECRET (설정된 경우에만)
+async function adminAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const key = req.headers['x-admin-key'];
-  if (!ENV.ADMIN_SECRET || key !== ENV.ADMIN_SECRET) {
-    res.status(401).json({ error: 'unauthorized' });
+  if (ENV.ADMIN_SECRET && ENV.ADMIN_SECRET.length >= 16 && key === ENV.ADMIN_SECRET) { next(); return; }
+
+  const m = /^Bearer\s+(.+)$/i.exec(String(req.headers.authorization || ''));
+  const decoded = m ? await verifyIdToken(m[1]) : null;
+  if (!decoded) { res.status(401).json({ error: 'unauthorized' }); return; }
+  if (!(await isAdminUser(decoded))) {
+    logger.warn('admin', `forbidden: ${decoded.uid} ${decoded.email ?? ''}`);
+    res.status(403).json({ error: 'forbidden' });
     return;
   }
   next();
