@@ -14,6 +14,7 @@ import {
 } from './playerStateStore.js';
 import { playerEnterZone, playerLeaveZone, resolveZoneId } from '../zone/zoneManager.js';
 import { sendZoneSnapshot, sendPlayerRevived, sendNotify } from '../gateway/clientSyncService.js';
+import { visibleMonsters, resetKnown, forgetPlayer } from '../gateway/interestManager.js';
 import { parseLang, t } from '../../lib/i18n.js';
 import { getSocketId } from '../gateway/socketGateway.js';
 import { getMonstersByZone } from '../monster/monsterInstanceStore.js';
@@ -67,9 +68,10 @@ export async function joinZone(socketId: string, data: {
   bindSocket(socketId, userId);
   playerEnterZone(userId, zoneId);
 
-  // 접속 직후 존 스냅샷 전송
-  const monsters = getMonstersByZone(zoneId);
+  // 접속 직후 스냅샷 — 내 주변 몬스터만 (interestManager.VIEW_RADIUS_M)
+  const monsters = visibleMonsters(state.lat, state.lng, getMonstersByZone(zoneId));
   sendZoneSnapshot(socketId, zoneId, monsters);
+  resetKnown(userId, monsters);
   sendNotify(socketId, t(lang, 'zone_joined', zoneId));
 
   logger.info('playerSession', `${userId} joined zone ${zoneId} [lang=${lang}]`);
@@ -104,6 +106,7 @@ export function leaveZone(socketId: string): void {
   if (player) {
     playerLeaveZone(userId, player.zoneId);
     removePlayer(userId);
+    forgetPlayer(userId);
     logger.info('playerSession', `${userId} left zone ${player.zoneId}`);
   }
 }
@@ -142,6 +145,7 @@ export function sweepTimedOutPlayers(): string[] {
     if (t - player.lastSeenAt > PLAYER_TIMEOUT_MS) {
       playerLeaveZone(player.userId, player.zoneId);
       removePlayer(player.userId);
+      forgetPlayer(player.userId);
       timedOut.push(player.userId);
       logger.info('playerSession', `timeout: ${player.userId} (no update for ${PLAYER_TIMEOUT_MS}ms)`);
     }

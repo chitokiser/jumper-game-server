@@ -31,7 +31,8 @@ const monsterRespawnService_js_1 = require("../monster/monsterRespawnService.js"
 const combatResolver_js_1 = require("../combat/combatResolver.js");
 const dropStore_js_1 = require("../drop/dropStore.js");
 const playerSessionManager_js_1 = require("../player/playerSessionManager.js");
-const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const interestManager_js_1 = require("../gateway/interestManager.js");
+const playerStateStore_js_2 = require("../player/playerStateStore.js");
 const constants_js_1 = require("../../config/constants.js");
 const logger_js_1 = require("../../lib/logger.js");
 let ticker = null;
@@ -70,18 +71,20 @@ async function worldTick(deltaMs) {
             // - 활성 존(플레이어 있음): 전체 AI 실행 (추격·순찰·전투)
             // - 비활성 존: 상태 전환(attacking/chasing→idle/return)만 처리, 순찰 이동 스킵
             // ⚠️ 배치 전송: 개별 emit 대신 배열 수집 후 1회 broadcastMonsterBatch — BGM 끊김 방지
-            const batchUpdates = [];
+            // 플레이어별 전송: 각자 주변(VIEW_RADIUS_M)의 바뀐/새로 보이는 몬스터만 (interestManager)
+            const current = [];
+            const changedIds = new Set();
             for (const m of monsters) {
                 const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs, active);
                 if (updated !== m) {
                     (0, monsterInstanceStore_js_1.setMonster)(updated);
-                    const stateChanged = updated.state !== m.state;
-                    if (active || stateChanged)
-                        batchUpdates.push(updated);
+                    changedIds.add(updated.monsterId);
                 }
+                current.push(updated);
             }
-            if (batchUpdates.length > 0)
-                (0, clientSyncService_js_1.broadcastMonsterBatch)(zoneId, batchUpdates);
+            // 비활성 존 = 플레이어 없음 → 보낼 대상이 없다
+            if (active)
+                (0, interestManager_js_1.syncZoneToPlayers)((0, playerStateStore_js_2.getPlayersInZone)(zoneId), current, changedIds);
             // 전투 판정 — 플레이어가 있는 존만
             if (active)
                 (0, combatResolver_js_1.tickCombat)(zoneId);

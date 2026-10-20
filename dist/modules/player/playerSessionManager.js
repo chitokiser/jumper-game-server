@@ -16,6 +16,7 @@ exports.sweepTimedOutPlayers = sweepTimedOutPlayers;
 const playerStateStore_js_1 = require("./playerStateStore.js");
 const zoneManager_js_1 = require("../zone/zoneManager.js");
 const clientSyncService_js_1 = require("../gateway/clientSyncService.js");
+const interestManager_js_1 = require("../gateway/interestManager.js");
 const i18n_js_1 = require("../../lib/i18n.js");
 const monsterInstanceStore_js_1 = require("../monster/monsterInstanceStore.js");
 const playerResolver_js_1 = require("./playerResolver.js");
@@ -57,9 +58,10 @@ async function joinZone(socketId, data) {
     (0, playerStateStore_js_1.setPlayer)(state);
     (0, playerStateStore_js_1.bindSocket)(socketId, userId);
     (0, zoneManager_js_1.playerEnterZone)(userId, zoneId);
-    // 접속 직후 존 스냅샷 전송
-    const monsters = (0, monsterInstanceStore_js_1.getMonstersByZone)(zoneId);
+    // 접속 직후 스냅샷 — 내 주변 몬스터만 (interestManager.VIEW_RADIUS_M)
+    const monsters = (0, interestManager_js_1.visibleMonsters)(state.lat, state.lng, (0, monsterInstanceStore_js_1.getMonstersByZone)(zoneId));
     (0, clientSyncService_js_1.sendZoneSnapshot)(socketId, zoneId, monsters);
+    (0, interestManager_js_1.resetKnown)(userId, monsters);
     (0, clientSyncService_js_1.sendNotify)(socketId, (0, i18n_js_1.t)(lang, 'zone_joined', zoneId));
     logger_js_1.logger.info('playerSession', `${userId} joined zone ${zoneId} [lang=${lang}]`);
 }
@@ -89,6 +91,7 @@ function leaveZone(socketId) {
     if (player) {
         (0, zoneManager_js_1.playerLeaveZone)(userId, player.zoneId);
         (0, playerStateStore_js_1.removePlayer)(userId);
+        (0, interestManager_js_1.forgetPlayer)(userId);
         logger_js_1.logger.info('playerSession', `${userId} left zone ${player.zoneId}`);
     }
 }
@@ -123,6 +126,7 @@ function sweepTimedOutPlayers() {
         if (t - player.lastSeenAt > constants_js_1.PLAYER_TIMEOUT_MS) {
             (0, zoneManager_js_1.playerLeaveZone)(player.userId, player.zoneId);
             (0, playerStateStore_js_1.removePlayer)(player.userId);
+            (0, interestManager_js_1.forgetPlayer)(player.userId);
             timedOut.push(player.userId);
             logger_js_1.logger.info('playerSession', `timeout: ${player.userId} (no update for ${constants_js_1.PLAYER_TIMEOUT_MS}ms)`);
         }

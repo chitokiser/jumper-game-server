@@ -28,7 +28,9 @@ import { tickRespawn } from '../monster/monsterRespawnService.js';
 import { tickCombat } from '../combat/combatResolver.js';
 import { sweepExpiredDrops } from '../drop/dropStore.js';
 import { sweepTimedOutPlayers } from '../player/playerSessionManager.js';
-import { broadcastMonsterUpdate, broadcastMonsterBatch } from '../gateway/clientSyncService.js';
+import { broadcastMonsterUpdate } from '../gateway/clientSyncService.js';
+import { syncZoneToPlayers } from '../gateway/interestManager.js';
+import { getPlayersInZone } from '../player/playerStateStore.js';
 import { MonsterInstance } from '../../types/monster.js';
 import { DEFAULT_TICK_MS, PLAYER_SWEEP_EVERY } from '../../config/constants.js';
 import { logger } from '../../lib/logger.js';
@@ -77,16 +79,19 @@ async function worldTick(deltaMs: number): Promise<void> {
       // - 활성 존(플레이어 있음): 전체 AI 실행 (추격·순찰·전투)
       // - 비활성 존: 상태 전환(attacking/chasing→idle/return)만 처리, 순찰 이동 스킵
       // ⚠️ 배치 전송: 개별 emit 대신 배열 수집 후 1회 broadcastMonsterBatch — BGM 끊김 방지
-      const batchUpdates: MonsterInstance[] = [];
+      // 플레이어별 전송: 각자 주변(VIEW_RADIUS_M)의 바뀐/새로 보이는 몬스터만 (interestManager)
+      const current: MonsterInstance[] = [];
+      const changedIds = new Set<string>();
       for (const m of monsters) {
         const updated = tickMonsterAi(m, deltaMs, active);
         if (updated !== m) {
           setMonster(updated);
-          const stateChanged = updated.state !== m.state;
-          if (active || stateChanged) batchUpdates.push(updated);
+          changedIds.add(updated.monsterId);
         }
+        current.push(updated);
       }
-      if (batchUpdates.length > 0) broadcastMonsterBatch(zoneId, batchUpdates);
+      // 비활성 존 = 플레이어 없음 → 보낼 대상이 없다
+      if (active) syncZoneToPlayers(getPlayersInZone(zoneId), current, changedIds);
 
       // 전투 판정 — 플레이어가 있는 존만
       if (active) tickCombat(zoneId);
