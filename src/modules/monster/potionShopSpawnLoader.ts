@@ -3,7 +3,8 @@
  * 약물상점(potion/shop_potion) 기반 몬스터 스폰 자동 생성
  *
  * 서버 시작 시 Firestore game_shops에서 모든 약물상점을 읽어
- * 각 상점 중심 ~600-900m 반경에 5종 × 50마리(5스폰 × maxCount:10) 자동 배치
+ * 각 상점 중심 ~600-900m 반경에 5종 × 10마리(5스폰 × maxCount:2) = 상점당 50마리 자동 배치
+ * (2026-10-20: 상점당 250마리 → 50마리로 축소 — 서버 부하·휴대폰 부담 감소)
  *
  * - 새 존(zone) 생성 없음 — 상점 좌표에서 가장 가까운 기존 존에 스폰 추가
  *   (새 존을 만들면 클라이언트가 그 존을 알 수 없어 플레이어가 배정되지 않음)
@@ -55,6 +56,9 @@ const OFFSETS_900: { dlat: number; dlng: number }[] = [
   { dlat: -0.0050, dlng: -0.0070 }, // SW
   { dlat:  0.0000, dlng: -0.0085 }, // W
 ];
+
+/** 스폰포인트당 최대 마리 수 — 상점당 총 = 5종 × 5위치 × 이 값 */
+const PER_SPAWN_MAX = 2;
 
 interface SpawnTemplate {
   type: string;
@@ -163,7 +167,7 @@ export async function loadPotionShopSpawns(): Promise<void> {
           lat:              lat + o.dlat,
           lng:              lng + o.dlng,
           respawnSeconds:   tmpl.respawnSeconds,
-          maxCount:         10,
+          maxCount:         PER_SPAWN_MAX,
           active:           true,
           aggroRangeM:      tmpl.aggroRangeM,
           attackRangeM:     tmpl.attackRangeM,
