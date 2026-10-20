@@ -12,6 +12,7 @@ exports.loadSpawnConfig = loadSpawnConfig;
 exports.getSpawnConfig = getSpawnConfig;
 exports.getAllSpawnConfigs = getAllSpawnConfigs;
 exports.getLoadedZoneConfigs = getLoadedZoneConfigs;
+exports.registerSpawnConfig = registerSpawnConfig;
 exports.addSpawnConfig = addSpawnConfig;
 exports.loadAdminSpawnsFromFirestore = loadAdminSpawnsFromFirestore;
 exports.removeSpawnConfig = removeSpawnConfig;
@@ -38,6 +39,10 @@ function getAllSpawnConfigs() {
 }
 function getLoadedZoneConfigs() {
     return zoneConfigs;
+}
+/** 런타임에 스폰 포인트 등록 (Firestore 저장 없음 — 재시작 시 재생성하는 동적 스폰용) */
+function registerSpawnConfig(spawn) {
+    spawnMap.set(spawn.spawnId, spawn);
 }
 /** 런타임에 스폰 포인트 추가 (관리자 배치) + Firestore 영구 저장 */
 function addSpawnConfig(spawn) {

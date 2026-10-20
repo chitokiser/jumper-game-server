@@ -28,6 +28,7 @@ const env_js_1 = require("../../config/env.js");
 const constants_js_1 = require("../../config/constants.js");
 const logger_js_1 = require("../../lib/logger.js");
 const eventNames_js_1 = require("./eventNames.js");
+const auth_js_1 = require("../../lib/auth.js");
 /** socketId → userId 매핑 */
 const socketToUser = new Map();
 /** userId → 재접속 유예 타이머 (disconnect 후 일정 시간 대기) */
@@ -44,7 +45,16 @@ function initSocketGateway(httpServer, handlers) {
     });
     io.on('connection', (socket) => {
         logger_js_1.logger.info('gateway', `client connected: ${socket.id}`);
-        socket.on(eventNames_js_1.C2S.PLAYER_JOIN, (data) => {
+        socket.on(eventNames_js_1.C2S.PLAYER_JOIN, async (data) => {
+            // 로그인 토큰 확인 — 클라이언트가 보낸 userId는 믿지 않는다
+            const decoded = await (0, auth_js_1.verifyIdToken)(data?.idToken);
+            if (!decoded) {
+                socket.emit(eventNames_js_1.S2C.ERROR, { code: 'unauthenticated', message: 'login required' });
+                logger_js_1.logger.warn('gateway', `join rejected (no valid token): ${socket.id}`);
+                return;
+            }
+            data = { ...data, userId: decoded.uid };
+            delete data.idToken;
             // 재접속 유예 중이던 같은 userId → 타이머 취소, 세션 유지
             const pending = pendingDisconnects.get(data.userId);
             if (pending) {

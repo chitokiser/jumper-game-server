@@ -9,6 +9,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendZoneSnapshot = sendZoneSnapshot;
 exports.broadcastMonsterUpdate = broadcastMonsterUpdate;
+exports.broadcastMonsterBatch = broadcastMonsterBatch;
 exports.broadcastMonsterDied = broadcastMonsterDied;
 exports.broadcastMonsterRespawned = broadcastMonsterRespawned;
 exports.sendPlayerHit = sendPlayerHit;
@@ -35,9 +36,13 @@ function sendZoneSnapshot(socketId, zoneId, monsters) {
         serverTime: Date.now(),
     });
 }
-/** 몬스터 상태 변경 브로드캐스트 */
+/** 몬스터 상태 변경 브로드캐스트 (단건 — 전투 피격·리스폰 전용) */
 function broadcastMonsterUpdate(zoneId, monster) {
     (0, socketGateway_js_1.emitToZone)(zoneId, eventNames_js_1.S2C.MONSTER_UPDATE, monster);
+}
+/** 몬스터 배치 상태 변경 브로드캐스트 (tick 루프 전용 — 개별 emit 대신 1회 전송) */
+function broadcastMonsterBatch(zoneId, monsters) {
+    (0, socketGateway_js_1.emitToZone)(zoneId, eventNames_js_1.S2C.MONSTER_BATCH_UPDATE, monsters);
 }
 /** 몬스터 사망 브로드캐스트 */
 function broadcastMonsterDied(zoneId, monsterId) {

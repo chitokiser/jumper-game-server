@@ -69,16 +69,19 @@ async function worldTick(deltaMs) {
             // AI 상태 갱신
             // - 활성 존(플레이어 있음): 전체 AI 실행 (추격·순찰·전투)
             // - 비활성 존: 상태 전환(attacking/chasing→idle/return)만 처리, 순찰 이동 스킵
+            // ⚠️ 배치 전송: 개별 emit 대신 배열 수집 후 1회 broadcastMonsterBatch — BGM 끊김 방지
+            const batchUpdates = [];
             for (const m of monsters) {
                 const updated = (0, monsterAiService_js_1.tickMonsterAi)(m, deltaMs, active);
                 if (updated !== m) {
                     (0, monsterInstanceStore_js_1.setMonster)(updated);
-                    // 비활성 존도 상태 전환은 broadcast — 재접속 시 stale 방지
                     const stateChanged = updated.state !== m.state;
                     if (active || stateChanged)
-                        (0, clientSyncService_js_1.broadcastMonsterUpdate)(zoneId, updated);
+                        batchUpdates.push(updated);
                 }
             }
+            if (batchUpdates.length > 0)
+                (0, clientSyncService_js_1.broadcastMonsterBatch)(zoneId, batchUpdates);
             // 전투 판정 — 플레이어가 있는 존만
             if (active)
                 (0, combatResolver_js_1.tickCombat)(zoneId);

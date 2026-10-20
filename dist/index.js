@@ -29,6 +29,7 @@ const admin_js_1 = require("./routes/admin.js");
 const zoneRegistry_js_1 = require("./modules/zone/zoneRegistry.js");
 const monsterSpawnService_js_1 = require("./modules/monster/monsterSpawnService.js");
 const defaultWorldData_js_1 = require("./config/defaultWorldData.js");
+const potionShopSpawnLoader_js_1 = require("./modules/monster/potionShopSpawnLoader.js");
 // ── Socket.io 게이트웨이 ───────────────────────────────────────────────────────
 const socketGateway_js_1 = require("./modules/gateway/socketGateway.js");
 const playerSessionManager_js_1 = require("./modules/player/playerSessionManager.js");
@@ -48,7 +49,9 @@ async function bootstrap() {
     logger_js_1.logger.info('bootstrap', `loaded ${(0, spawnConfigLoader_js_1.getLoadedZoneConfigs)().length} zones`);
     // 2-1. Firestore에서 admin 스폰 복원 (서버 재시작 시 orc/pirate 등 유지)
     await (0, spawnConfigLoader_js_1.loadAdminSpawnsFromFirestore)();
-    // 2-2. Firestore에서 몬스터 타입 스탯 오버라이드 복원
+    // 2-2. 약물상점 기반 몬스터 스폰 동적 생성 (모든 potion/shop_potion 상점 대상)
+    await (0, potionShopSpawnLoader_js_1.loadPotionShopSpawns)();
+    // 2-3. Firestore에서 몬스터 타입 스탯 오버라이드 복원
     await (0, admin_js_1.loadMonsterTypeConfigs)();
     // 3. HTTP + Socket.io 서버 생성
     const httpServer = (0, http_1.createServer)(app_js_1.default);
